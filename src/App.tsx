@@ -1,22 +1,51 @@
-import { useRef } from 'react'
-import * as Tone from 'tone'
+import { useState } from 'react'
+import { Oscillator } from './Oscillator'
 import './App.css'
 
-function App() {
-  const synth = useRef(new Tone.Synth().toDestination())
+type OscillatorData = {
+  id: string
+  name: string
+}
 
-  if (!synth.current) {
-    return null
+function App() {
+  const [count, setCount] = useState(1)
+
+  const onRemoveOscillator = (id: string) => {
+    setOscillators(oscillators.filter((oscillator) => oscillator.id !== id))
   }
 
+  const [oscillators, setOscillators] = useState<OscillatorData[]>(() => [
+    {
+      id: crypto.randomUUID(),
+      name: 'Oscillator 1',
+    },
+  ])
+
   return (
-    <>
-      <div className="card">
-        <button onClick={() => synth.current.triggerAttackRelease('C4', '8n')}>
-          test
-        </button>
-      </div>
-    </>
+    <div className="flex space-x-2">
+      {oscillators.map((oscillator) => (
+        <Oscillator
+          key={oscillator.id}
+          id={oscillator.id}
+          name={oscillator.name}
+          onRemove={onRemoveOscillator}
+        />
+      ))}
+      <button
+        onClick={() => {
+          setCount(count + 1)
+          setOscillators([
+            ...oscillators,
+            {
+              id: crypto.randomUUID(),
+              name: `Oscillator ${count + 1}`,
+            },
+          ])
+        }}
+      >
+        Add Oscillator
+      </button>
+    </div>
   )
 }
 
