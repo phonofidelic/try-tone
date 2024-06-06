@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import * as Tone from 'tone'
 
-export default function Vca({
+export function Vca({
   id,
   name,
   node,
@@ -19,8 +19,7 @@ export default function Vca({
     node.volume.value = value
   }
 
-  const handleRemove = (id: string) => {
-    console.log('remove', id)
+  const handleRemove = () => {
     node.disconnect()
     node.dispose()
     onRemove(id)
@@ -43,7 +42,7 @@ export default function Vca({
           }}
         />
       </div>
-      <button onClick={() => handleRemove(id)}>Remove</button>
+      <button onClick={handleRemove}>Remove</button>
     </div>
   )
 }

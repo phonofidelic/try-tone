@@ -18,8 +18,8 @@ export function Oscillator({
     'stopped',
   )
 
-  const { vcas } = useVoice()
-  const destinations = [...vcas]
+  const { vcas, mixer, envelopes } = useVoice()
+  const destinations = [...vcas, ...envelopes, mixer]
 
   const onFrequencyChange = (value: number) => {
     setFrequency(value)
@@ -45,6 +45,13 @@ export function Oscillator({
       node.disconnect()
       return
     }
+
+    if (destinationId === 'out') {
+      node.disconnect()
+      node.toDestination()
+      return
+    }
+
     const destinationNode = destinations.find(
       (destination) => destination.id === destinationId,
     )?.node
@@ -74,11 +81,13 @@ export function Oscillator({
         <div>
           Shape: <OscillatorTypeSelect onChange={onTypeChange} />
         </div>
-        <div>
-          <button onClick={onTogglePlay}>
+        <div className="flex space-x-2 w-full">
+          <button className="w-full" onClick={onTogglePlay}>
             {displayState === 'stopped' ? 'Start' : 'Stop'}
           </button>
-          <button onClick={() => handleRemove(id)}>Remove</button>
+          <button className="w-full" onClick={() => handleRemove(id)}>
+            Remove
+          </button>
         </div>
         <div>
           Destination:
@@ -134,21 +143,18 @@ function DestinationSelect({
   destinations,
   onChange,
 }: {
-  destinations: { id: string; name: string; node: Tone.Volume }[]
+  destinations: { id: string; name: string; node: Tone.OutputNode }[]
   onChange: (value: string) => void
 }) {
   return (
-    <select
-      onChange={(event) =>
-        onChange(event.target.value as Tone.ToneOscillatorType)
-      }
-    >
+    <select onChange={(event) => onChange(event.target.value)}>
       <option value={'not_set'}>Select a destination</option>
       {destinations.map((destination) => (
         <option key={destination.id} value={destination.id}>
           {destination.name}
         </option>
       ))}
+      <option value={'out'}>Out</option>
     </select>
   )
 }
