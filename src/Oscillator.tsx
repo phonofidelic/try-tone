@@ -1,72 +1,96 @@
-import { createContext, useRef, useState } from 'react'
+import { useState } from 'react'
 import * as Tone from 'tone'
-
-const OscillatorContext = createContext<Tone.Oscillator | null>(null)
+import { useVoice } from './App'
 
 export function Oscillator({
   id,
   name,
+  node,
   onRemove,
 }: {
   id: string
   name: string
-  onRemove: (name: string) => void
+  node: Tone.Oscillator
+  onRemove: (id: string) => void
 }) {
-  const INITIAL_FREQUENCY = 440
-  const INITIAL_TYPE = 'sine'
-  const oscillator = useRef(
-    new Tone.Oscillator(INITIAL_FREQUENCY, INITIAL_TYPE).toDestination(),
-  )
-
-  const [frequency, setFrequency] = useState(INITIAL_FREQUENCY)
+  const [frequency, setFrequency] = useState(440)
   const [displayState, setDisplayState] = useState<'started' | 'stopped'>(
     'stopped',
   )
 
-  if (!oscillator.current) {
-    return null
-  }
+  const { vcas } = useVoice()
+  const destinations = [...vcas]
 
   const onFrequencyChange = (value: number) => {
     setFrequency(value)
-    oscillator.current.frequency.rampTo(Tone.Frequency(value).toFrequency(), 0)
+    node.frequency.rampTo(Tone.Frequency(value).toFrequency(), 0)
   }
 
   const onTypeChange = (value: Tone.ToneOscillatorType) => {
-    oscillator.current.type = value
+    node.type = value
   }
 
   const onTogglePlay = () => {
     if (displayState === 'stopped') {
-      oscillator.current.start()
+      node.start()
       setDisplayState('started')
     } else {
-      oscillator.current.stop()
+      node.stop()
       setDisplayState('stopped')
     }
   }
 
+  const onDestinationChange = (destinationId: string) => {
+    if (destinationId === 'not_set') {
+      node.disconnect()
+      return
+    }
+    const destinationNode = destinations.find(
+      (destination) => destination.id === destinationId,
+    )?.node
+
+    if (!destinationNode) {
+      throw new Error('Destination node not found')
+    }
+
+    node.disconnect()
+    node.connect(destinationNode)
+  }
+
+  const handleRemove = (id: string) => {
+    node.disconnect()
+    node.dispose()
+    onRemove(id)
+  }
+
   return (
-    <OscillatorContext.Provider value={oscillator.current}>
-      <div className="flex flex-col space-y-2 border rounded p-2">
+    <div className="flex flex-col space-y-2 border rounded p-2">
+      <div>
+        <h2 className="text-2xl">{name}</h2>
+      </div>
+      <div>
+        <FrequencyDisplay value={frequency} />
+        <FrequencyControl onChange={onFrequencyChange} />
         <div>
-          <h2 className="text-2xl">{name}</h2>
+          Shape: <OscillatorTypeSelect onChange={onTypeChange} />
         </div>
         <div>
-          <FrequencyDisplay value={frequency} />
-          <FrequencyControl onChange={onFrequencyChange} />
+          <button onClick={onTogglePlay}>
+            {displayState === 'stopped' ? 'Start' : 'Stop'}
+          </button>
+          <button onClick={() => handleRemove(id)}>Remove</button>
+        </div>
+        <div>
+          Destination:
           <div>
-            Shape: <OscillatorTypeSelect onChange={onTypeChange} />
-          </div>
-          <div>
-            <button onClick={onTogglePlay}>
-              {displayState === 'stopped' ? 'Start' : 'Stop'}
-            </button>
-            <button onClick={() => onRemove(id)}>Remove</button>
+            <DestinationSelect
+              destinations={destinations}
+              onChange={onDestinationChange}
+            />
           </div>
         </div>
       </div>
-    </OscillatorContext.Provider>
+    </div>
   )
 }
 
@@ -102,6 +126,29 @@ function OscillatorTypeSelect({
       <option value="triangle">Triangle</option>
       <option value="sawtooth">Sawtooth</option>
       <option value="square">Square</option>
+    </select>
+  )
+}
+
+function DestinationSelect({
+  destinations,
+  onChange,
+}: {
+  destinations: { id: string; name: string; node: Tone.Volume }[]
+  onChange: (value: string) => void
+}) {
+  return (
+    <select
+      onChange={(event) =>
+        onChange(event.target.value as Tone.ToneOscillatorType)
+      }
+    >
+      <option value={'not_set'}>Select a destination</option>
+      {destinations.map((destination) => (
+        <option key={destination.id} value={destination.id}>
+          {destination.name}
+        </option>
+      ))}
     </select>
   )
 }
