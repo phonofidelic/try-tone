@@ -1,25 +1,27 @@
 import { useState } from 'react'
 import * as Tone from 'tone'
 import { useVoice } from './App'
+import { DestinationSelect } from './DestinationSelect'
 
 export function Oscillator({
   id,
   name,
   node,
   onRemove,
+  onConnect,
 }: {
   id: string
   name: string
   node: Tone.Oscillator
   onRemove: (id: string) => void
+  onConnect: (destinationId: string) => void
 }) {
   const [frequency, setFrequency] = useState(440)
   const [displayState, setDisplayState] = useState<'started' | 'stopped'>(
     'stopped',
   )
 
-  const { vcas, mixer, envelopes } = useVoice()
-  const destinations = [...vcas, ...envelopes, mixer]
+  const { nodes } = useVoice()
 
   const onFrequencyChange = (value: number) => {
     setFrequency(value)
@@ -38,30 +40,6 @@ export function Oscillator({
       node.stop()
       setDisplayState('stopped')
     }
-  }
-
-  const onDestinationChange = (destinationId: string) => {
-    if (destinationId === 'not_set') {
-      node.disconnect()
-      return
-    }
-
-    if (destinationId === 'out') {
-      node.disconnect()
-      node.toDestination()
-      return
-    }
-
-    const destinationNode = destinations.find(
-      (destination) => destination.id === destinationId,
-    )?.node
-
-    if (!destinationNode) {
-      throw new Error('Destination node not found')
-    }
-
-    node.disconnect()
-    node.connect(destinationNode)
   }
 
   const handleRemove = (id: string) => {
@@ -91,10 +69,11 @@ export function Oscillator({
         </div>
         <div>
           Destination:
-          <div>
+          <div className="flex flex-col space-y-2">
             <DestinationSelect
-              destinations={destinations}
-              onChange={onDestinationChange}
+              destinations={nodes.filter((node) => node.id !== id)}
+              initialValue={'not_set'}
+              onChange={onConnect}
             />
           </div>
         </div>
@@ -135,26 +114,6 @@ function OscillatorTypeSelect({
       <option value="triangle">Triangle</option>
       <option value="sawtooth">Sawtooth</option>
       <option value="square">Square</option>
-    </select>
-  )
-}
-
-function DestinationSelect({
-  destinations,
-  onChange,
-}: {
-  destinations: { id: string; name: string; node: Tone.OutputNode }[]
-  onChange: (value: string) => void
-}) {
-  return (
-    <select onChange={(event) => onChange(event.target.value)}>
-      <option value={'not_set'}>Select a destination</option>
-      {destinations.map((destination) => (
-        <option key={destination.id} value={destination.id}>
-          {destination.name}
-        </option>
-      ))}
-      <option value={'out'}>Out</option>
     </select>
   )
 }

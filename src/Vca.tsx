@@ -1,17 +1,22 @@
 import { useState } from 'react'
 import * as Tone from 'tone'
+import { DestinationSelect } from './DestinationSelect'
+import { useVoice } from './App'
 
 export function Vca({
   id,
   name,
   node,
   onRemove,
+  onConnect,
 }: {
   id: string
   name: string
   node: Tone.Volume
   onRemove: (id: string) => void
+  onConnect: (destinationId: string) => void
 }) {
+  const { nodes } = useVoice()
   const [volumeLevel, setVolumeLevel] = useState(node.volume.value)
 
   const onVolumeChange = (value: number) => {
@@ -43,6 +48,16 @@ export function Vca({
         />
       </div>
       <button onClick={handleRemove}>Remove</button>
+      <div>
+        Destination:
+        <div>
+          <DestinationSelect
+            destinations={nodes.filter((node) => node.id !== id)}
+            initialValue={'not_set'}
+            onChange={onConnect}
+          />
+        </div>
+      </div>
     </div>
   )
 }

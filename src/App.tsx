@@ -1,29 +1,10 @@
-import { createContext, useContext, useRef, useState } from 'react'
+import { createContext, useContext, useState } from 'react'
 import * as Tone from 'tone'
 import { Oscillator } from './Oscillator'
 import './App.css'
 import { Vca } from './Vca'
 import { Envelope } from './Envelope'
-
-const MixerContext = createContext<Tone.Merge | null>(null)
-
-function MixerContextProvider({ children }: { children: React.ReactNode }) {
-  const mergeNode = useRef(new Tone.Merge().toDestination()).current
-
-  return (
-    <MixerContext.Provider value={mergeNode}>{children}</MixerContext.Provider>
-  )
-}
-
-export function useMixer() {
-  const mergeNode = useContext(MixerContext)
-
-  if (!mergeNode) {
-    throw new Error('useMixer must be used within a MixerContextProvider')
-  }
-
-  return mergeNode
-}
+import Tile from './Tile'
 
 export type OscillatorData = {
   id: string
@@ -47,113 +28,163 @@ export type MixerData = {
   node: Tone.Merge
 }
 
+export type NodeData = {
+  id: string
+  name: string
+  sources: string[]
+  destinations: string[]
+} & (
+  | {
+      type: 'oscillator'
+      node: Tone.Oscillator
+    }
+  | {
+      type: 'vca'
+      node: Tone.Volume
+    }
+  | {
+      type: 'envelope'
+      node: Tone.AmplitudeEnvelope
+    }
+  | {
+      type: 'mixer'
+      node: Tone.Merge
+    }
+)
+
 type VoiceContextValue = {
-  mixer: MixerData
-  oscillators: OscillatorData[]
-  vcas: VcaData[]
-  envelopes: EnvelopeData[]
-  addOscillator: () => void
-  removeOscillator: (id: string) => void
-  addVca: () => void
-  removeVca: (id: string) => void
-  addEnvelope: () => void
-  removeEnvelope: (id: string) => void
+  nodes: NodeData[]
+  addNode: (newNode: NodeData) => void
+  removeNode: (nodeId: string) => void
+  connectNodes: (source: string, destination: string) => void
 }
 
 const VoiceContext = createContext<VoiceContextValue | null>(null)
 
-function VoiceContexProvider({ children }: { children: React.ReactNode }) {
-  const mergeNode = useMixer()
-  const initialOscillatorNode = new Tone.Oscillator(440, 'sine')
-  const initialVcaNode = new Tone.Volume(0).connect(mergeNode)
-  const initialEnvelope = new Tone.AmplitudeEnvelope().connect(mergeNode)
-
-  const [oscillators, setOscillators] = useState([
-    {
-      id: crypto.randomUUID(),
-      name: 'Oscillator 1',
-      node: initialOscillatorNode,
-    },
-  ])
-
-  const [vcas, setVcas] = useState([
-    {
-      id: crypto.randomUUID(),
-      name: 'VCA 1',
-      node: initialVcaNode,
-    },
-  ])
-
-  const [envelopes, setEnvelopes] = useState([
-    {
-      id: crypto.randomUUID(),
-      name: 'Envelope 1',
-      node: initialEnvelope,
-    },
-  ])
-
-  const mixer = {
+function VoiceContextProvider({ children }: { children: React.ReactNode }) {
+  const initialMixerData: NodeData = {
     id: crypto.randomUUID(),
+    type: 'mixer',
     name: 'Mixer',
-    node: mergeNode,
+    node: new Tone.Merge().toDestination(),
+    sources: [],
+    destinations: ['out'],
   }
 
-  const addOscillator = () => {
-    const newOscillator = {
+  const [nodes, setNodes] = useState<NodeData[]>([
+    {
       id: crypto.randomUUID(),
-      name: `Oscillator ${oscillators.length + 1}`,
-      node: new Tone.Oscillator(440, 'sine'),
+      type: 'oscillator',
+      name: 'Oscillator 1',
+      node: new Tone.Oscillator(440, 'sine').connect(initialMixerData.node),
+      sources: [],
+      destinations: [initialMixerData.id],
+    },
+    initialMixerData,
+  ])
+
+  const addNode = (newNode: NodeData) => {
+    setNodes([...nodes, newNode])
+  }
+
+  const removeNode = (nodeId: string) => {
+    const nodeToRemove = nodes.find((node) => node.id === nodeId)
+
+    if (!nodeToRemove) {
+      return
     }
 
-    setOscillators([...oscillators, newOscillator])
+    const mutatedNodeList = nodes
+      .map((node) => ({
+        ...node,
+        sources: node.sources.filter(
+          (sourceId) => sourceId !== nodeToRemove.id,
+        ),
+        destinations: nodes
+          .filter((node) => node.id !== nodeToRemove.id)
+          .map((node) => node.id),
+      }))
+      .filter((node) => node.id !== nodeToRemove.id)
+
+    setNodes(mutatedNodeList)
+    nodeToRemove.node.disconnect().dispose()
   }
 
-  const removeOscillator = (id: string) => {
-    setOscillators(oscillators.filter((oscillator) => oscillator.id !== id))
-  }
-
-  const addVca = () => {
-    const newVca = {
-      id: crypto.randomUUID(),
-      name: `VCA ${vcas.length + 1}`,
-      node: new Tone.Volume(0).connect(mergeNode),
+  const connectNodes = (sourceId: string, destinationId: string) => {
+    const sourceNode = nodes.find((node) => node.id === sourceId)
+    if (!sourceNode) {
+      return
     }
 
-    setVcas([...vcas, newVca])
-  }
+    if (destinationId === 'not_set') {
+      setNodes(
+        nodes.map((node) =>
+          node.id === sourceNode.id
+            ? {
+                ...sourceNode,
+                destinations: ['not_set'],
+              }
+            : node,
+        ),
+      )
 
-  const removeVca = (id: string) => {
-    setVcas(vcas.filter((vca) => vca.id !== id))
-  }
+      sourceNode.node.disconnect()
+      return
+    }
 
-  const addEnvelope = () => {
-    setEnvelopes([
-      ...envelopes,
-      {
-        id: crypto.randomUUID(),
-        name: `Envelope ${envelopes.length + 1}`,
-        node: new Tone.AmplitudeEnvelope().connect(mergeNode),
-      },
-    ])
-  }
+    if (destinationId === 'out') {
+      setNodes(
+        nodes.map((node) =>
+          node.id === sourceNode.id
+            ? {
+                ...sourceNode,
+                destinations: ['out'],
+              }
+            : node,
+        ),
+      )
 
-  const removeEnvelope = (id: string) => {
-    setEnvelopes(envelopes.filter((envelope) => envelope.id !== id))
+      sourceNode.node.disconnect()
+      sourceNode.node.toDestination()
+      return
+    }
+
+    const destinationNode = nodes.find((node) => node.id === destinationId)
+    if (!destinationNode) {
+      return
+    }
+
+    setNodes(
+      nodes.map((node) => {
+        if (node.id === sourceNode.id) {
+          return {
+            ...sourceNode,
+            destinations: [destinationNode.id],
+          }
+        }
+
+        if (node.id === destinationNode.id) {
+          return {
+            ...destinationNode,
+            sources: [sourceNode.id],
+          }
+        }
+
+        return node
+      }),
+    )
+
+    sourceNode.node.disconnect()
+    sourceNode.node.connect(destinationNode.node)
   }
 
   return (
     <VoiceContext.Provider
       value={{
-        mixer,
-        oscillators,
-        vcas,
-        envelopes,
-        addOscillator,
-        removeOscillator,
-        addVca,
-        removeVca,
-        addEnvelope,
-        removeEnvelope,
+        nodes,
+        addNode,
+        removeNode,
+        connectNodes,
       }}
     >
       {children}
@@ -172,41 +203,107 @@ export function useVoice() {
 }
 
 function Workspace() {
-  const {
-    oscillators,
-    vcas,
-    envelopes,
-    addOscillator,
-    removeOscillator,
-    addVca,
-    removeVca,
-    addEnvelope,
-    removeEnvelope,
-  } = useVoice()
+  const { nodes, addNode, removeNode, connectNodes } = useVoice()
 
   return (
-    <div className="grid grid-rows-3 grid-flow-col auto-cols-max gap-2">
-      <div className="grid grid-flow-col auto-cols-fr gap-2">
-        {oscillators.map((oscillator) => (
-          <Oscillator
-            key={oscillator.id}
-            {...oscillator}
-            onRemove={removeOscillator}
-          />
-        ))}
-        <button onClick={() => addOscillator()}>Add Oscillator</button>
-      </div>
-      <div className="grid grid-flow-col auto-cols-fr gap-2">
-        {vcas.map((vca) => (
-          <Vca key={vca.id} {...vca} onRemove={removeVca} />
-        ))}
-        <button onClick={() => addVca()}>Add VCA</button>
-      </div>
-      <div className="grid grid-flow-col auto-cols-fr gap-2">
-        {envelopes.map((envelope) => (
-          <Envelope key={envelope.id} {...envelope} onRemove={removeEnvelope} />
-        ))}
-        <button onClick={() => addEnvelope()}>Add Envelope</button>
+    <div className="fixed w-screen h-screen top-0 left-0 select-none">
+      <div className="relative size-full">
+        {nodes.map((node) => {
+          switch (node.type) {
+            case 'oscillator':
+              return (
+                <Tile key={node.id}>
+                  <Oscillator
+                    key={node.id}
+                    id={node.id}
+                    name={node.name}
+                    node={node.node}
+                    onRemove={removeNode}
+                    onConnect={(destinationId) =>
+                      connectNodes(node.id, destinationId)
+                    }
+                  />
+                </Tile>
+              )
+            case 'vca':
+              return (
+                <Tile key={node.id}>
+                  <Vca
+                    key={node.id}
+                    id={node.id}
+                    name={node.name}
+                    node={node.node}
+                    onRemove={removeNode}
+                    onConnect={(destinationId) =>
+                      connectNodes(node.id, destinationId)
+                    }
+                  />
+                </Tile>
+              )
+            case 'envelope':
+              return (
+                <Tile key={node.id}>
+                  <Envelope
+                    key={node.id}
+                    id={node.id}
+                    name={node.name}
+                    node={node.node}
+                    onRemove={removeNode}
+                    onConnect={(destinationId) =>
+                      connectNodes(node.id, destinationId)
+                    }
+                  />
+                </Tile>
+              )
+            case 'mixer':
+              return null
+          }
+        })}
+        <div className="flex w-full space-x-2 p-2">
+          <button
+            onClick={() => {
+              const id = crypto.randomUUID()
+              addNode({
+                id,
+                type: 'oscillator',
+                name: `Oscillator ${nodes.filter((node) => node.type === 'oscillator').length + 1}`,
+                node: new Tone.Oscillator(440, 'sine'),
+                sources: [],
+                destinations: [],
+              })
+            }}
+          >
+            Add Oscillator
+          </button>
+          <button
+            onClick={() =>
+              addNode({
+                id: crypto.randomUUID(),
+                type: 'vca',
+                name: `VCA ${nodes.filter((node) => node.type === 'vca').length + 1}`,
+                node: new Tone.Volume(),
+                sources: [],
+                destinations: [],
+              })
+            }
+          >
+            Add VCA
+          </button>
+          <button
+            onClick={() =>
+              addNode({
+                id: crypto.randomUUID(),
+                type: 'envelope',
+                name: `Envelope ${nodes.filter((node) => node.type === 'envelope').length + 1}`,
+                node: new Tone.AmplitudeEnvelope(),
+                sources: [],
+                destinations: [],
+              })
+            }
+          >
+            Add Envelope
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -214,11 +311,9 @@ function Workspace() {
 
 function App() {
   return (
-    <MixerContextProvider>
-      <VoiceContexProvider>
-        <Workspace />
-      </VoiceContexProvider>
-    </MixerContextProvider>
+    <VoiceContextProvider>
+      <Workspace />
+    </VoiceContextProvider>
   )
 }
 
