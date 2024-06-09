@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import * as Tone from 'tone'
 import { DestinationSelect } from './DestinationSelect'
-import { useVoice } from './App'
+import { useVoice } from '../App'
 
 export function Vca({
   id,

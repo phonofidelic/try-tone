@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import * as Tone from 'tone'
-import { useVoice } from './App'
+import { useVoice } from '../App'
 import { DestinationSelect } from './DestinationSelect'
 
 export function Oscillator({

@@ -1,10 +1,10 @@
 import { createContext, useContext, useState } from 'react'
 import * as Tone from 'tone'
-import { Oscillator } from './Oscillator'
+import { Oscillator } from './components/Oscillator'
 import './App.css'
-import { Vca } from './Vca'
-import { Envelope } from './Envelope'
-import Tile from './Tile'
+import { Vca } from './components/Vca'
+import { Envelope } from './components/Envelope'
+import Tile from './components/Tile'
 
 export type OscillatorData = {
   id: string

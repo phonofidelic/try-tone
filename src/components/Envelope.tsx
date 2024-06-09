@@ -1,6 +1,6 @@
 import * as Tone from 'tone'
 import { DestinationSelect } from './DestinationSelect'
-import { useVoice } from './App'
+import { useVoice } from '../App'
 
 export function Envelope({
   id,
