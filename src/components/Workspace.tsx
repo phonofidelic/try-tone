@@ -5,6 +5,7 @@ import Tile from './Tile'
 import { Oscillator } from './Oscillator'
 import { Vca } from './Vca'
 import { Envelope } from './Envelope'
+import ContextMenu from './ContextMenu'
 
 export type OscillatorData = {
   id: string
@@ -211,63 +212,99 @@ export function useWorkspace() {
 
 export function Workspace() {
   const { nodes, addNode, removeNode, connectNodes } = useWorkspace()
+  const [contextMenuOpen, setContextMenuOpen] = useState(false)
+  const [contextMenuClickOrigin, setContextMenuClickOrigin] = useState<
+    | {
+        x: number
+        y: number
+      }
+    | undefined
+  >(undefined)
 
   return (
-    <div className="fixed flex flex-col w-screen h-screen top-0 left-0 select-none">
-      <Toolbar nodes={nodes} addNode={addNode} />
-      <div className="relative size-full">
-        {nodes.map((node) => {
-          switch (node.type) {
-            case 'oscillator':
-              return (
-                <Tile key={node.id}>
-                  <Oscillator
-                    key={node.id}
-                    id={node.id}
-                    name={node.name}
-                    node={node.node}
-                    onRemove={removeNode}
-                    onConnect={(destinationId) =>
-                      connectNodes(node.id, destinationId)
-                    }
-                  />
-                </Tile>
-              )
-            case 'vca':
-              return (
-                <Tile key={node.id}>
-                  <Vca
-                    key={node.id}
-                    id={node.id}
-                    name={node.name}
-                    node={node.node}
-                    onRemove={removeNode}
-                    onConnect={(destinationId) =>
-                      connectNodes(node.id, destinationId)
-                    }
-                  />
-                </Tile>
-              )
-            case 'envelope':
-              return (
-                <Tile key={node.id}>
-                  <Envelope
-                    key={node.id}
-                    id={node.id}
-                    name={node.name}
-                    node={node.node}
-                    onRemove={removeNode}
-                    onConnect={(destinationId) =>
-                      connectNodes(node.id, destinationId)
-                    }
-                  />
-                </Tile>
-              )
-            case 'mixer':
-              return null
-          }
-        })}
+    <>
+      <ContextMenu
+        open={contextMenuOpen}
+        clickOrigin={contextMenuClickOrigin}
+        onDismiss={() => setContextMenuOpen(false)}
+      >
+        <div className="flex flex-col space-y-2 *:shadow">
+          <Toolbar
+            nodes={nodes}
+            addNode={addNode}
+            onSelect={() => setContextMenuOpen(false)}
+          />
+        </div>
+      </ContextMenu>
+      <div className="fixed flex flex-col w-screen h-screen top-0 left-0 select-none">
+        <div className="flex w-screen space-x-2 p-2">
+          <Toolbar
+            nodes={nodes}
+            addNode={addNode}
+            onSelect={() => setContextMenuClickOrigin(undefined)}
+          />
+        </div>
+        <div
+          className="relative size-full"
+          onContextMenu={(event) => {
+            event.preventDefault()
+            setContextMenuClickOrigin({ x: event.pageX, y: event.pageY })
+            setContextMenuOpen(true)
+          }}
+        >
+          {nodes.map((node) => {
+            switch (node.type) {
+              case 'oscillator':
+                return (
+                  <Tile key={node.id} initialPos={contextMenuClickOrigin}>
+                    <Oscillator
+                      key={node.id}
+                      id={node.id}
+                      name={node.name}
+                      node={node.node}
+                      onRemove={removeNode}
+                      onConnect={(destinationId) =>
+                        connectNodes(node.id, destinationId)
+                      }
+                    />
+                  </Tile>
+                )
+              case 'vca':
+                return (
+                  <Tile key={node.id} initialPos={contextMenuClickOrigin}>
+                    <Vca
+                      key={node.id}
+                      id={node.id}
+                      name={node.name}
+                      node={node.node}
+                      onRemove={removeNode}
+                      onConnect={(destinationId) =>
+                        connectNodes(node.id, destinationId)
+                      }
+                    />
+                  </Tile>
+                )
+              case 'envelope':
+                return (
+                  <Tile key={node.id} initialPos={contextMenuClickOrigin}>
+                    <Envelope
+                      key={node.id}
+                      id={node.id}
+                      name={node.name}
+                      node={node.node}
+                      onRemove={removeNode}
+                      onConnect={(destinationId) =>
+                        connectNodes(node.id, destinationId)
+                      }
+                    />
+                  </Tile>
+                )
+              case 'mixer':
+                return null
+            }
+          })}
+        </div>
       </div>
-    </div>
+    </>
   )
 }

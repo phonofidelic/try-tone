@@ -4,14 +4,16 @@ import { ModuleData } from './Workspace'
 export function Toolbar({
   nodes,
   addNode,
+  onSelect,
 }: {
   nodes: ModuleData[]
   addNode: (data: ModuleData) => void
+  onSelect?: () => void
 }) {
   return (
-    <div className="flex w-screen space-x-2 p-2">
-      <button
-        onClick={() =>
+    <>
+      <Button
+        onClick={() => {
           addNode({
             id: crypto.randomUUID(),
             type: 'oscillator',
@@ -20,12 +22,13 @@ export function Toolbar({
             sources: [],
             destinations: [],
           })
-        }
+          typeof onSelect === 'function' && onSelect()
+        }}
       >
         Add Oscillator
-      </button>
-      <button
-        onClick={() =>
+      </Button>
+      <Button
+        onClick={() => {
           addNode({
             id: crypto.randomUUID(),
             type: 'vca',
@@ -34,12 +37,13 @@ export function Toolbar({
             sources: [],
             destinations: [],
           })
-        }
+          typeof onSelect === 'function' && onSelect()
+        }}
       >
         Add VCA
-      </button>
-      <button
-        onClick={() =>
+      </Button>
+      <Button
+        onClick={() => {
           addNode({
             id: crypto.randomUUID(),
             type: 'envelope',
@@ -48,10 +52,25 @@ export function Toolbar({
             sources: [],
             destinations: [],
           })
-        }
+          typeof onSelect === 'function' && onSelect()
+        }}
       >
         Add Envelope
-      </button>
-    </div>
+      </Button>
+    </>
+  )
+}
+
+function Button({
+  children,
+  onClick,
+}: {
+  children: React.ReactNode
+  onClick: React.MouseEventHandler<HTMLButtonElement>
+}) {
+  return (
+    <button className="" onClick={onClick}>
+      {children}
+    </button>
   )
 }

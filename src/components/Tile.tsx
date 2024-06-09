@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { clsx } from 'clsx'
 
-export default function Tile({ children }: { children: React.ReactNode }) {
-  const [pos, setPos] = useState({ x: 200, y: 200 })
+export default function Tile({
+  initialPos,
+  children,
+}: {
+  initialPos?: { x: number; y: number }
+  children: React.ReactNode
+}) {
+  const [pos, setPos] = useState(initialPos ?? { x: 200, y: 200 })
   const [offset, setOffset] = useState({ x: 0, y: 0 })
   const [isPressed, setIsPressed] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
