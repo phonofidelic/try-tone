@@ -1,16 +1,22 @@
 import * as Tone from 'tone'
+import { DestinationSelect } from './DestinationSelect'
+import { useWorkspace } from './Workspace'
 
 export function Envelope({
   id,
   name,
   node,
   onRemove,
+  onConnect,
 }: {
   id: string
   name: string
   node: Tone.Envelope
   onRemove: (id: string) => void
+  onConnect: (destinationId: string) => void
 }) {
+  const { nodes } = useWorkspace()
+
   const onParameterChange = (
     parameter: 'attack' | 'decay' | 'sustain' | 'release',
     value: number,
@@ -90,6 +96,15 @@ export function Envelope({
         <button className="w-full" onClick={handleRemove}>
           Remove
         </button>
+      </div>
+      <div>
+        Destination:
+        <div>
+          <DestinationSelect
+            destinations={nodes.filter((node) => node.id !== id)}
+            onChange={onConnect}
+          />
+        </div>
       </div>
     </div>
   )
