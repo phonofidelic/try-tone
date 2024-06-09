@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import * as Tone from 'tone'
 import { DestinationSelect } from './DestinationSelect'
-import { useVoice } from '../App'
+import { useWorkspace } from './Workspace'
 
 export function Vca({
   id,
@@ -16,7 +16,7 @@ export function Vca({
   onRemove: (id: string) => void
   onConnect: (destinationId: string) => void
 }) {
-  const { nodes } = useVoice()
+  const { nodes } = useWorkspace()
   const [volumeLevel, setVolumeLevel] = useState(node.volume.value)
 
   const onVolumeChange = (value: number) => {

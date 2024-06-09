@@ -1,6 +1,6 @@
 import * as Tone from 'tone'
 import { DestinationSelect } from './DestinationSelect'
-import { useVoice } from '../App'
+import { useWorkspace } from './Workspace'
 
 export function Envelope({
   id,
@@ -15,7 +15,7 @@ export function Envelope({
   onRemove: (id: string) => void
   onConnect: (destinationId: string) => void
 }) {
-  const { nodes } = useVoice()
+  const { nodes } = useWorkspace()
 
   const onParameterChange = (
     parameter: 'attack' | 'decay' | 'sustain' | 'release',

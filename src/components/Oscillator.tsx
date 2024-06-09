@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import * as Tone from 'tone'
-import { useVoice } from '../App'
 import { DestinationSelect } from './DestinationSelect'
+import { useWorkspace } from './Workspace'
 
 export function Oscillator({
   id,
@@ -21,7 +21,7 @@ export function Oscillator({
     'stopped',
   )
 
-  const { nodes } = useVoice()
+  const { nodes } = useWorkspace()
 
   const onFrequencyChange = (value: number) => {
     setFrequency(value)
