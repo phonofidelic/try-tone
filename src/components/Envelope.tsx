@@ -47,9 +47,7 @@ export function Envelope({
 
   return (
     <div className="flex flex-col space-y-2 border rounded p-2 w-full">
-      <div>
-        <h2 className="text-2xl">{name}</h2>
-      </div>
+      <h2 className="text-2xl">{name}</h2>
       <div className="flex flex-col w-fit mx-auto">
         <div className="flex w-full justify-between">
           A{' '}
@@ -97,15 +95,10 @@ export function Envelope({
           Remove
         </button>
       </div>
-      <div>
-        Destination:
-        <div>
-          <DestinationSelect
-            destinations={nodes.filter((node) => node.id !== id)}
-            onChange={onConnect}
-          />
-        </div>
-      </div>
+      <DestinationSelect
+        destinations={nodes.filter((node) => node.id !== id)}
+        onChange={onConnect}
+      />
     </div>
   )
 }

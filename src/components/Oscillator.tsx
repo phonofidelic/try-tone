@@ -49,35 +49,24 @@ export function Oscillator({
   }
 
   return (
-    <div className="flex flex-col space-y-2 border rounded p-2">
-      <div>
-        <h2 className="text-2xl">{name}</h2>
+    <div className="flex space-y-2 flex-col border rounded p-2">
+      <h2 className="text-2xl">{name}</h2>
+      <FrequencyDisplay value={frequency} />
+      <FrequencyControl onChange={onFrequencyChange} />
+      <OscillatorTypeSelect onChange={onTypeChange} />
+      <div className="flex space-x-2 w-full">
+        <button className="w-full" onClick={onTogglePlay}>
+          {displayState === 'stopped' ? 'Start' : 'Stop'}
+        </button>
+        <button className="w-full" onClick={() => handleRemove(id)}>
+          Remove
+        </button>
       </div>
-      <div>
-        <FrequencyDisplay value={frequency} />
-        <FrequencyControl onChange={onFrequencyChange} />
-        <div>
-          Shape: <OscillatorTypeSelect onChange={onTypeChange} />
-        </div>
-        <div className="flex space-x-2 w-full">
-          <button className="w-full" onClick={onTogglePlay}>
-            {displayState === 'stopped' ? 'Start' : 'Stop'}
-          </button>
-          <button className="w-full" onClick={() => handleRemove(id)}>
-            Remove
-          </button>
-        </div>
-        <div>
-          Destination:
-          <div className="flex flex-col space-y-2">
-            <DestinationSelect
-              destinations={nodes.filter((node) => node.id !== id)}
-              initialValue={'not_set'}
-              onChange={onConnect}
-            />
-          </div>
-        </div>
-      </div>
+      <DestinationSelect
+        destinations={nodes.filter((node) => node.id !== id)}
+        initialValue={'not_set'}
+        onChange={onConnect}
+      />
     </div>
   )
 }

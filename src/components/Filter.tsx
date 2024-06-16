@@ -41,39 +41,30 @@ export default function Filter({
 
   return (
     <div className="flex flex-col space-y-2 border rounded p-2">
-      <div className="w-full flex flex-col">
-        <h2 className="text-2xl">{name}</h2>
-        <FrequencyDisplay value={frequency} />
-        <FrequencyControl onChange={onFrequencyChange} />
-        <div className="flex w-full items-baseline">
-          {frequencyResponseCurve.current &&
-            Array.from(frequencyResponseCurve.current).map((response) => (
-              <div
-                key={response}
-                className="w-full bg-zinc-300"
-                style={{ height: response * 25 }}
-              />
-            ))}
-        </div>
-        <div>
-          <FilterTypeSelect value={frequencyType} onChange={onTypeChange} />
-        </div>
+      <h2 className="text-2xl">{name}</h2>
+      <FrequencyDisplay value={frequency} />
+      <FrequencyControl onChange={onFrequencyChange} />
+      <div className="flex w-full items-baseline">
+        {frequencyResponseCurve.current &&
+          Array.from(frequencyResponseCurve.current).map((response) => (
+            <div
+              key={response}
+              className="w-full bg-zinc-300"
+              style={{ height: response * 25 }}
+            />
+          ))}
       </div>
+      <FilterTypeSelect value={frequencyType} onChange={onTypeChange} />
       <div className="flex space-x-2 w-full">
         <button className="w-full" onClick={() => handleRemove(id)}>
           Remove
         </button>
       </div>
-      <div>
-        Destination:
-        <div className="flex flex-col space-y-2">
-          <DestinationSelect
-            destinations={nodes.filter((node) => node.id !== id)}
-            initialValue={'not_set'}
-            onChange={onConnect}
-          />
-        </div>
-      </div>
+      <DestinationSelect
+        destinations={nodes.filter((node) => node.id !== id)}
+        initialValue={'not_set'}
+        onChange={onConnect}
+      />
     </div>
   )
 }
@@ -95,8 +86,6 @@ function FrequencyControl({ onChange }: { onChange: (value: number) => void }) {
   )
 }
 
-const filterTypes = ['lowpass', 'highpass', 'bandpass'] as const
-
 function FilterTypeSelect({
   value,
   onChange,
@@ -104,6 +93,8 @@ function FilterTypeSelect({
   value: string
   onChange: (value: Tone.ToneOscillatorType) => void
 }) {
+  const filterTypes = ['highpass', 'bandpass', 'lowpass'] as const
+
   return (
     <select
       value={value}
