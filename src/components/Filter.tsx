@@ -1,0 +1,121 @@
+import * as Tone from 'tone'
+import { DestinationSelect } from './DestinationSelect'
+import { useWorkspace } from './Workspace'
+import { useRef, useState } from 'react'
+
+export default function Filter({
+  id,
+  name,
+  node,
+  onRemove,
+  onConnect,
+}: {
+  id: string
+  name: string
+  node: Tone.Filter
+  onRemove: (id: string) => void
+  onConnect: (destinationId: string) => void
+}) {
+  const { nodes } = useWorkspace()
+  const [frequency, setFrequency] = useState(20)
+  const [frequencyType, setFrequencyType] = useState('bandpass')
+
+  const frequencyResponseCurve = useRef(node.getFrequencyResponse())
+
+  const onFrequencyChange = (value: number) => {
+    setFrequency(value)
+    node.frequency.rampTo(value, 0)
+  }
+
+  const onTypeChange = (value: Tone.Filter['_type']) => {
+    setFrequencyType(value)
+    node.type = value
+    frequencyResponseCurve.current = node.getFrequencyResponse()
+  }
+
+  const handleRemove = (id: string) => {
+    node.disconnect()
+    node.dispose()
+    onRemove(id)
+  }
+
+  return (
+    <div className="flex flex-col space-y-2 border rounded p-2">
+      <div className="w-full flex flex-col">
+        <h2 className="text-2xl">{name}</h2>
+        <FrequencyDisplay value={frequency} />
+        <FrequencyControl onChange={onFrequencyChange} />
+        <div className="flex w-full items-baseline">
+          {frequencyResponseCurve.current &&
+            Array.from(frequencyResponseCurve.current).map((response) => (
+              <div
+                key={response}
+                className="w-full bg-zinc-300"
+                style={{ height: response * 25 }}
+              />
+            ))}
+        </div>
+        <div>
+          <FilterTypeSelect value={frequencyType} onChange={onTypeChange} />
+        </div>
+      </div>
+      <div className="flex space-x-2 w-full">
+        <button className="w-full" onClick={() => handleRemove(id)}>
+          Remove
+        </button>
+      </div>
+      <div>
+        Destination:
+        <div className="flex flex-col space-y-2">
+          <DestinationSelect
+            destinations={nodes.filter((node) => node.id !== id)}
+            initialValue={'not_set'}
+            onChange={onConnect}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function FrequencyDisplay({ value }: { value: number }) {
+  return <div>Frequency: {Math.round(value)} kHz</div>
+}
+
+function FrequencyControl({ onChange }: { onChange: (value: number) => void }) {
+  return (
+    <input
+      type="range"
+      min={20}
+      max={20000}
+      onChange={(event) => {
+        onChange(parseInt(event.target.value))
+      }}
+    />
+  )
+}
+
+const filterTypes = ['lowpass', 'highpass', 'bandpass'] as const
+
+function FilterTypeSelect({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (value: Tone.ToneOscillatorType) => void
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(event) =>
+        onChange(event.target.value as Tone.ToneOscillatorType)
+      }
+    >
+      {filterTypes.map((filterType) => (
+        <option key={filterType} value={filterType}>
+          {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
+        </option>
+      ))}
+    </select>
+  )
+}

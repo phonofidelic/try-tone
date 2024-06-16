@@ -45,10 +45,13 @@ export default function Tile({
   return (
     <div
       ref={containerRef}
-      className={clsx('absolute group cursor-pointer bg-white', {
-        'drop-shadow': !isPressed,
-        'drop-shadow-lg': isPressed,
-      })}
+      className={clsx(
+        'absolute group cursor-pointer bg-white dark:bg-zinc-800',
+        {
+          'drop-shadow': !isPressed,
+          'drop-shadow-lg': isPressed,
+        },
+      )}
       style={{
         left: pos.x,
         top: pos.y,
@@ -68,7 +71,7 @@ export default function Tile({
             })
           }}
         >
-          <div className="size-full  group-hover:border-2 border-slate-300 rounded  border-dashed"></div>
+          <div className="size-full  group-hover:border-2 border-slate-300 dark:border-zinc-500 rounded  border-dashed"></div>
         </div>
       </div>
       {children}

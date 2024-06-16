@@ -57,6 +57,21 @@ export function Toolbar({
       >
         Add Envelope
       </Button>
+      <Button
+        onClick={() => {
+          addNode({
+            id: crypto.randomUUID(),
+            type: 'filter',
+            name: `Filter ${nodes.filter((node) => node.type === 'filter').length + 1}`,
+            node: new Tone.Filter(440, 'bandpass'),
+            sources: [],
+            destinations: [],
+          })
+          typeof onSelect === 'function' && onSelect()
+        }}
+      >
+        Add Filter
+      </Button>
     </>
   )
 }

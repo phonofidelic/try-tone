@@ -6,6 +6,7 @@ import { Oscillator } from './Oscillator'
 import { Vca } from './Vca'
 import { Envelope } from './Envelope'
 import ContextMenu from './ContextMenu'
+import Filter from './Filter'
 
 export type OscillatorData = {
   id: string
@@ -50,6 +51,10 @@ export type ModuleData = {
   | {
       type: 'mixer'
       node: Tone.Merge
+    }
+  | {
+      type: 'filter'
+      node: Tone.Filter
     }
 )
 
@@ -288,6 +293,21 @@ export function Workspace() {
                 return (
                   <Tile key={node.id} initialPos={contextMenuClickOrigin}>
                     <Envelope
+                      key={node.id}
+                      id={node.id}
+                      name={node.name}
+                      node={node.node}
+                      onRemove={removeNode}
+                      onConnect={(destinationId) =>
+                        connectNodes(node.id, destinationId)
+                      }
+                    />
+                  </Tile>
+                )
+              case 'filter':
+                return (
+                  <Tile key={node.id} initialPos={contextMenuClickOrigin}>
+                    <Filter
                       key={node.id}
                       id={node.id}
                       name={node.name}
