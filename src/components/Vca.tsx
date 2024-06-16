@@ -35,6 +35,7 @@ export function Vca({
       <h2 className="text-2xl">{name}</h2>
       <div>Volume: {volumeLevel}</div>
       <input
+        aria-label="volume"
         type="range"
         min={-20}
         max={20}

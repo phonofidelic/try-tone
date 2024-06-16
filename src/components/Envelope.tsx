@@ -52,6 +52,7 @@ export function Envelope({
         <div className="flex w-full justify-between">
           A{' '}
           <RangeControl
+            label="attack"
             initialValue={node.attack}
             range={[0, 2]}
             onChange={(value: number) => onParameterChange('attack', value)}
@@ -60,6 +61,7 @@ export function Envelope({
         <div className="flex w-full justify-between">
           D{' '}
           <RangeControl
+            label="decay"
             initialValue={node.decay}
             range={[0, 2]}
             onChange={(value: number) => onParameterChange('decay', value)}
@@ -68,6 +70,7 @@ export function Envelope({
         <div className="flex w-full justify-between">
           S{' '}
           <RangeControl
+            label="sustain"
             initialValue={node.sustain}
             range={[0, 1]}
             onChange={(value: number) => onParameterChange('sustain', value)}
@@ -76,6 +79,7 @@ export function Envelope({
         <div className="flex w-full justify-between">
           R{' '}
           <RangeControl
+            label="release"
             initialValue={node.release}
             range={[0, 2]}
             onChange={(value: number) => onParameterChange('release', value)}
@@ -106,14 +110,17 @@ export function Envelope({
 function RangeControl({
   initialValue,
   range,
+  label,
   onChange,
 }: {
   initialValue: Tone.Unit.Time
   range: [number, number]
+  label: string
   onChange: (value: number) => void
 }) {
   return (
     <input
+      aria-label={label}
       type="range"
       step={0.1}
       defaultValue={initialValue as number}

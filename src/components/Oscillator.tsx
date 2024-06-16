@@ -78,6 +78,7 @@ function FrequencyDisplay({ value }: { value: number }) {
 function FrequencyControl({ onChange }: { onChange: (value: number) => void }) {
   return (
     <input
+      aria-label="frequency"
       type="range"
       min={20}
       max={20000}
@@ -95,7 +96,8 @@ function OscillatorTypeSelect({
 }) {
   return (
     <select
-      name="Oscillator shape select"
+      aria-label="shape"
+      name="shape"
       onChange={(event) =>
         onChange(event.target.value as Tone.ToneOscillatorType)
       }

@@ -14,7 +14,8 @@ export function DestinationSelect({
   )
   return (
     <select
-      name="Destination select"
+      aria-label="destination"
+      name="destination"
       defaultValue={initialDestination?.id}
       onChange={(event) => onChange(event.target.value)}
     >
