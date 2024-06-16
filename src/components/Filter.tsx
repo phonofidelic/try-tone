@@ -97,6 +97,7 @@ function FilterTypeSelect({
 
   return (
     <select
+      name="Filter type select"
       value={value}
       onChange={(event) =>
         onChange(event.target.value as Tone.ToneOscillatorType)

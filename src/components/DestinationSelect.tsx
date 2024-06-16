@@ -14,6 +14,7 @@ export function DestinationSelect({
   )
   return (
     <select
+      name="Destination select"
       defaultValue={initialDestination?.id}
       onChange={(event) => onChange(event.target.value)}
     >

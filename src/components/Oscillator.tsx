@@ -95,6 +95,7 @@ function OscillatorTypeSelect({
 }) {
   return (
     <select
+      name="Oscillator shape select"
       onChange={(event) =>
         onChange(event.target.value as Tone.ToneOscillatorType)
       }
