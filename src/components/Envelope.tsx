@@ -47,13 +47,12 @@ export function Envelope({
 
   return (
     <div className="flex flex-col space-y-2 border rounded p-2 w-full">
-      <div>
-        <h2 className="text-2xl">{name}</h2>
-      </div>
+      <h2 className="text-2xl">{name}</h2>
       <div className="flex flex-col w-fit mx-auto">
         <div className="flex w-full justify-between">
           A{' '}
           <RangeControl
+            label="attack"
             initialValue={node.attack}
             range={[0, 2]}
             onChange={(value: number) => onParameterChange('attack', value)}
@@ -62,6 +61,7 @@ export function Envelope({
         <div className="flex w-full justify-between">
           D{' '}
           <RangeControl
+            label="decay"
             initialValue={node.decay}
             range={[0, 2]}
             onChange={(value: number) => onParameterChange('decay', value)}
@@ -70,6 +70,7 @@ export function Envelope({
         <div className="flex w-full justify-between">
           S{' '}
           <RangeControl
+            label="sustain"
             initialValue={node.sustain}
             range={[0, 1]}
             onChange={(value: number) => onParameterChange('sustain', value)}
@@ -78,6 +79,7 @@ export function Envelope({
         <div className="flex w-full justify-between">
           R{' '}
           <RangeControl
+            label="release"
             initialValue={node.release}
             range={[0, 2]}
             onChange={(value: number) => onParameterChange('release', value)}
@@ -97,15 +99,10 @@ export function Envelope({
           Remove
         </button>
       </div>
-      <div>
-        Destination:
-        <div>
-          <DestinationSelect
-            destinations={nodes.filter((node) => node.id !== id)}
-            onChange={onConnect}
-          />
-        </div>
-      </div>
+      <DestinationSelect
+        destinations={nodes.filter((node) => node.id !== id)}
+        onChange={onConnect}
+      />
     </div>
   )
 }
@@ -113,14 +110,17 @@ export function Envelope({
 function RangeControl({
   initialValue,
   range,
+  label,
   onChange,
 }: {
   initialValue: Tone.Unit.Time
   range: [number, number]
+  label: string
   onChange: (value: number) => void
 }) {
   return (
     <input
+      aria-label={label}
       type="range"
       step={0.1}
       defaultValue={initialValue as number}

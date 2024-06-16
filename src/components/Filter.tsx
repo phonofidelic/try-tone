@@ -1,9 +1,9 @@
-import { useState } from 'react'
 import * as Tone from 'tone'
 import { DestinationSelect } from './DestinationSelect'
 import { useWorkspace } from './Workspace'
+import { useRef, useState } from 'react'
 
-export function Oscillator({
+export default function Filter({
   id,
   name,
   node,
@@ -12,34 +12,25 @@ export function Oscillator({
 }: {
   id: string
   name: string
-  node: Tone.Oscillator
+  node: Tone.Filter
   onRemove: (id: string) => void
   onConnect: (destinationId: string) => void
 }) {
-  const [frequency, setFrequency] = useState(440)
-  const [displayState, setDisplayState] = useState<'started' | 'stopped'>(
-    'stopped',
-  )
-
   const { nodes } = useWorkspace()
+  const [frequency, setFrequency] = useState(20)
+  const [frequencyType, setFrequencyType] = useState('bandpass')
+
+  const frequencyResponseCurve = useRef(node.getFrequencyResponse())
 
   const onFrequencyChange = (value: number) => {
     setFrequency(value)
-    node.frequency.rampTo(Tone.Frequency(value).toFrequency(), 0)
+    node.frequency.rampTo(value, 0)
   }
 
-  const onTypeChange = (value: Tone.ToneOscillatorType) => {
+  const onTypeChange = (value: Tone.Filter['_type']) => {
+    setFrequencyType(value)
     node.type = value
-  }
-
-  const onTogglePlay = () => {
-    if (displayState === 'stopped') {
-      node.start()
-      setDisplayState('started')
-    } else {
-      node.stop()
-      setDisplayState('stopped')
-    }
+    frequencyResponseCurve.current = node.getFrequencyResponse()
   }
 
   const handleRemove = (id: string) => {
@@ -49,15 +40,22 @@ export function Oscillator({
   }
 
   return (
-    <div className="flex space-y-2 flex-col border rounded p-2">
+    <div className="flex flex-col space-y-2 border rounded p-2">
       <h2 className="text-2xl">{name}</h2>
       <FrequencyDisplay value={frequency} />
       <FrequencyControl onChange={onFrequencyChange} />
-      <OscillatorTypeSelect onChange={onTypeChange} />
+      <div className="flex w-full items-baseline">
+        {frequencyResponseCurve.current &&
+          Array.from(frequencyResponseCurve.current).map((response) => (
+            <div
+              key={response}
+              className="w-full bg-zinc-300"
+              style={{ height: response * 25 }}
+            />
+          ))}
+      </div>
+      <FilterTypeSelect value={frequencyType} onChange={onTypeChange} />
       <div className="flex space-x-2 w-full">
-        <button className="w-full" onClick={onTogglePlay}>
-          {displayState === 'stopped' ? 'Start' : 'Stop'}
-        </button>
         <button className="w-full" onClick={() => handleRemove(id)}>
           Remove
         </button>
@@ -72,7 +70,7 @@ export function Oscillator({
 }
 
 function FrequencyDisplay({ value }: { value: number }) {
-  return <div>Frequency: {Math.round(value)} Hz</div>
+  return <div>Frequency: {Math.round(value)} kHz</div>
 }
 
 function FrequencyControl({ onChange }: { onChange: (value: number) => void }) {
@@ -83,29 +81,35 @@ function FrequencyControl({ onChange }: { onChange: (value: number) => void }) {
       min={20}
       max={20000}
       onChange={(event) => {
-        onChange(Tone.Frequency(event.target.value).toFrequency())
+        onChange(parseInt(event.target.value))
       }}
     />
   )
 }
 
-function OscillatorTypeSelect({
+function FilterTypeSelect({
+  value,
   onChange,
 }: {
+  value: string
   onChange: (value: Tone.ToneOscillatorType) => void
 }) {
+  const filterTypes = ['highpass', 'bandpass', 'lowpass'] as const
+
   return (
     <select
-      aria-label="shape"
-      name="shape"
+      aria-label="type"
+      name="Filter type select"
+      value={value}
       onChange={(event) =>
         onChange(event.target.value as Tone.ToneOscillatorType)
       }
     >
-      <option value="sine">Sine</option>
-      <option value="triangle">Triangle</option>
-      <option value="sawtooth">Sawtooth</option>
-      <option value="square">Square</option>
+      {filterTypes.map((filterType) => (
+        <option key={filterType} value={filterType}>
+          {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
+        </option>
+      ))}
     </select>
   )
 }

@@ -32,32 +32,24 @@ export function Vca({
 
   return (
     <div className="flex flex-col space-y-2 border rounded p-2">
-      <div>
-        <h2 className="text-2xl">{name}</h2>
-      </div>
+      <h2 className="text-2xl">{name}</h2>
       <div>Volume: {volumeLevel}</div>
-      <div>
-        <input
-          type="range"
-          min={-20}
-          max={20}
-          defaultValue={0}
-          onChange={(event) => {
-            onVolumeChange(parseInt(event.target.value))
-          }}
-        />
-      </div>
+      <input
+        aria-label="volume"
+        type="range"
+        min={-20}
+        max={20}
+        defaultValue={0}
+        onChange={(event) => {
+          onVolumeChange(parseInt(event.target.value))
+        }}
+      />
       <button onClick={handleRemove}>Remove</button>
-      <div>
-        Destination:
-        <div>
-          <DestinationSelect
-            destinations={nodes.filter((node) => node.id !== id)}
-            initialValue={'not_set'}
-            onChange={onConnect}
-          />
-        </div>
-      </div>
+      <DestinationSelect
+        destinations={nodes.filter((node) => node.id !== id)}
+        initialValue={'not_set'}
+        onChange={onConnect}
+      />
     </div>
   )
 }
