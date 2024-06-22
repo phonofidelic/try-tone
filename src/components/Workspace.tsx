@@ -10,6 +10,7 @@ import ContextMenu from './ContextMenu'
 import Filter from './Filter'
 import { Button } from './Button'
 import { clamp, translateCoordinates } from '../utils'
+import { Sequencer } from './Sequencer'
 
 export type OscillatorData = {
   id: string
@@ -464,6 +465,9 @@ export function Workspace() {
             }
           })}
         </div>
+      </div>
+      <div className="fixed left-0 bottom-0 z-10 w-full">
+        <Sequencer />
       </div>
       {/* <CursorDebug scale={scale} offset={screenOffset} /> */}
     </>
