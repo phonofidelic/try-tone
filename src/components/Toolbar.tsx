@@ -1,5 +1,6 @@
 import * as Tone from 'tone'
 import { ModuleData } from './Workspace'
+import { Button } from './Button'
 
 export function Toolbar({
   nodes,
@@ -8,12 +9,12 @@ export function Toolbar({
 }: {
   nodes: ModuleData[]
   addNode: (data: ModuleData) => void
-  onSelect?: () => void
+  onSelect?: (event: React.MouseEvent) => void
 }) {
   return (
     <>
       <Button
-        onClick={() => {
+        onClick={(event) => {
           addNode({
             id: crypto.randomUUID(),
             type: 'oscillator',
@@ -22,13 +23,13 @@ export function Toolbar({
             sources: [],
             destinations: [],
           })
-          typeof onSelect === 'function' && onSelect()
+          typeof onSelect === 'function' && onSelect(event)
         }}
       >
         Add Oscillator
       </Button>
       <Button
-        onClick={() => {
+        onClick={(event) => {
           addNode({
             id: crypto.randomUUID(),
             type: 'vca',
@@ -37,13 +38,13 @@ export function Toolbar({
             sources: [],
             destinations: [],
           })
-          typeof onSelect === 'function' && onSelect()
+          typeof onSelect === 'function' && onSelect(event)
         }}
       >
         Add VCA
       </Button>
       <Button
-        onClick={() => {
+        onClick={(event) => {
           addNode({
             id: crypto.randomUUID(),
             type: 'envelope',
@@ -52,13 +53,13 @@ export function Toolbar({
             sources: [],
             destinations: [],
           })
-          typeof onSelect === 'function' && onSelect()
+          typeof onSelect === 'function' && onSelect(event)
         }}
       >
         Add Envelope
       </Button>
       <Button
-        onClick={() => {
+        onClick={(event) => {
           addNode({
             id: crypto.randomUUID(),
             type: 'filter',
@@ -67,25 +68,11 @@ export function Toolbar({
             sources: [],
             destinations: [],
           })
-          typeof onSelect === 'function' && onSelect()
+          typeof onSelect === 'function' && onSelect(event)
         }}
       >
         Add Filter
       </Button>
     </>
-  )
-}
-
-function Button({
-  children,
-  onClick,
-}: {
-  children: React.ReactNode
-  onClick: React.MouseEventHandler<HTMLButtonElement>
-}) {
-  return (
-    <button className="" onClick={onClick}>
-      {children}
-    </button>
   )
 }
