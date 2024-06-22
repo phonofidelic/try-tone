@@ -1,5 +1,5 @@
-import clsx from 'clsx'
 import { useEffect, useRef, useState } from 'react'
+import clsx from 'clsx'
 
 export default function ContextMenu({
   open,
@@ -22,10 +22,6 @@ export default function ContextMenu({
 
     setMenuRect(menuRef.current.getBoundingClientRect())
   }, [clickOrigin])
-
-  // if (!clickOrigin) {
-  //   return null
-  // }
 
   return (
     <>

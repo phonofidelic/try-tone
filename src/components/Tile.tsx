@@ -3,15 +3,32 @@ import { clsx } from 'clsx'
 
 export default function Tile({
   initialPos,
+  scale,
   children,
 }: {
-  initialPos?: { x: number; y: number }
+  initialPos: { x: number; y: number }
+  scale: number
   children: React.ReactNode
 }) {
-  const [pos, setPos] = useState(initialPos ?? { x: 200, y: 200 })
+  const [pos, setPos] = useState(initialPos)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
   const [isPressed, setIsPressed] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const initialized = useRef(false)
+
+  useEffect(() => {
+    if (!containerRef.current) {
+      return
+    }
+    const containerRect = containerRef.current.getBoundingClientRect()
+    if (!initialized.current) {
+      setPos((prev) => ({
+        x: prev.x - containerRect.width / 2,
+        y: prev.y - containerRect.height / 2,
+      }))
+    }
+    initialized.current = true
+  }, [])
 
   useEffect(() => {
     if (!containerRef.current) {
@@ -24,8 +41,8 @@ export default function Tile({
       }
 
       setPos({
-        x: event.clientX - offset.x,
-        y: event.clientY - offset.y,
+        x: event.clientX * scale - offset.x,
+        y: event.clientY * scale - offset.y,
       })
     }
     const onMouseUp = () => {
@@ -40,16 +57,18 @@ export default function Tile({
       document.removeEventListener('mousemove', onMouseMove)
       document.removeEventListener('mouseup', onMouseUp)
     }
-  }, [isPressed, offset])
+  }, [isPressed, offset, scale])
 
   return (
     <div
       ref={containerRef}
       className={clsx(
-        'absolute group cursor-pointer bg-white dark:bg-zinc-800',
+        'absolute group cursor-pointer bg-white dark:bg-zinc-800 transition-opacity duration-500',
         {
           'drop-shadow': !isPressed,
           'drop-shadow-lg': isPressed,
+          'opacity-0': !initialized.current,
+          'opacity-100': initialized.current,
         },
       )}
       style={{
@@ -66,8 +85,8 @@ export default function Tile({
             }
             setIsPressed(true)
             setOffset({
-              x: event.pageX - containerRef.current.offsetLeft,
-              y: event.pageY - containerRef.current.offsetTop,
+              x: event.clientX * scale - containerRef.current.offsetLeft,
+              y: event.clientY * scale - containerRef.current.offsetTop,
             })
           }}
         >
