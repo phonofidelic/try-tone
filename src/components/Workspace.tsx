@@ -310,7 +310,7 @@ export function Workspace() {
         <div className="flex space-x-2">
           <Toolbar nodes={nodes} addNode={addNode} />
         </div>
-        <div className="flex w-full justify-end">
+        <div className="flex w-full space-x-2 justify-end">
           <Button
             onClick={() => {
               removeAllNodes()
