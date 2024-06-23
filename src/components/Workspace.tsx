@@ -466,7 +466,7 @@ export function Workspace() {
           })}
         </div>
       </div>
-      <div className="fixed left-0 bottom-0 z-10 w-full">
+      <div className="fixed left-0 bottom-0 z-10 w-full p-2">
         <Sequencer />
       </div>
       {/* <CursorDebug scale={scale} offset={screenOffset} /> */}

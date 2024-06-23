@@ -4,10 +4,12 @@ export function DestinationSelect({
   destinations,
   initialValue,
   onChange,
+  className,
 }: {
   destinations: { id: string; name: string; node: Tone.OutputNode }[]
   initialValue?: string
   onChange: (value: string) => void
+  className?: string
 }) {
   const initialDestination = destinations.find(
     (destination) => destination.id === initialValue,
@@ -18,6 +20,7 @@ export function DestinationSelect({
       name="destination"
       defaultValue={initialDestination?.id}
       onChange={(event) => onChange(event.target.value)}
+      className={className}
     >
       <option value={'not_set'}>Select a destination</option>
       {destinations.map((destination) => (
