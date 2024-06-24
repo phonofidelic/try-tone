@@ -63,7 +63,7 @@ export default function Tile({
     <div
       ref={containerRef}
       className={clsx(
-        'absolute group cursor-pointer bg-white dark:bg-zinc-800 transition-opacity duration-500',
+        'absolute group cursor-pointer bg-white dark:bg-zinc-800 transition-opacity duration-500 rounded',
         {
           'drop-shadow': !isPressed,
           'drop-shadow-lg': isPressed,

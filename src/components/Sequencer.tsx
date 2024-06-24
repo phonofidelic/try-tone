@@ -18,6 +18,7 @@ interface Note {
 }
 
 export function Sequencer() {
+  const [isExpanded, setIsExpanded] = useState(true)
   const [baseNote, setBaseNote] = useState('not_set')
   const [octave, setOctave] = useState('not_set')
   const [scale, setScale] = useState<number[]>([])
@@ -87,11 +88,11 @@ export function Sequencer() {
   }
 
   useEffect(() => {
-    if (octave === 'not_set') {
+    if (octave === 'not_set' || baseNote === 'not_set') {
       return
     }
-    sequence.current = makeGrid(makeScale(scale, `C${octave}`))
-  }, [octave, scale])
+    sequence.current = makeGrid(makeScale(scale, `${baseNote}${octave}`))
+  }, [baseNote, octave, scale])
 
   useEffect(() => {
     if (!transportRef.current || !destinationNode || !gateNode) {
@@ -129,39 +130,69 @@ export function Sequencer() {
   }, [destinationNode, gateNode])
 
   return (
-    <div className="flex flex-col md:flex-row w-full space-x-2 bg-white dark:bg-zinc-800 p-2 border rounded">
-      <div className="flex h-full flex-col space-y-2 mt-auto">
-        <label>
-          <div className="text-xs">V/Oct out</div>
-          <DestinationSelect
-            destinations={nodes}
-            initialValue={'not_set'}
-            onChange={handleDestinationChange}
-          />
-        </label>
-        <label>
-          <div className="text-xs">Gate out</div>
-          <DestinationSelect
-            destinations={nodes}
-            initialValue={'not_set'}
-            onChange={handleGateChange}
-          />
-        </label>
-        <label>
-          <div className="text-xs">Base Note</div>
-          <select onChange={(event) => setBaseNote(event.target.value)}>
-            <option value="not_set">Select base note</option>
-            {ALPHA_NAMES.map((note) => (
-              <option key={note} value={note}>
-                {note}
-              </option>
-            ))}
-          </select>
-        </label>
-        {baseNote !== 'not_set' && (
+    <div
+      className={clsx(
+        'relative flex flex-col md:flex-row w-full space-x-2 bg-white dark:bg-zinc-800 p-2 border border-zinc-200 rounded transition-all',
+        {
+          'h-[45vh]': isExpanded,
+          'h-0 ': !isExpanded,
+        },
+      )}
+    >
+      <div className="absolute left-0 -top-[50px]">
+        <Button
+          className=""
+          onClick={() => setIsExpanded((previous) => !previous)}
+        >
+          {isExpanded ? 'Hide' : 'Show'}
+        </Button>
+      </div>
+      <div
+        className={clsx('flex flex-col space-y-2 p-2 transition-all', {
+          'opacity-100': isExpanded,
+          'opacity-0': !isExpanded,
+        })}
+      >
+        <div className="flex flex-col space-y-2 mt-auto overflow-y-auto">
+          {/* <div className="grid grid-cols-2 grid-flow-row auto-rows-max gap-2 mt-auto *:border"> */}
+          <label className="">
+            <div className="text-xs">V/Oct out</div>
+            <DestinationSelect
+              className="w-full"
+              destinations={nodes.filter((node) => node.type === 'oscillator')}
+              initialValue={'not_set'}
+              onChange={handleDestinationChange}
+            />
+          </label>
+          <label>
+            <div className="text-xs">Gate out</div>
+            <DestinationSelect
+              className="w-full"
+              destinations={nodes.filter((node) => node.type === 'envelope')}
+              initialValue={'not_set'}
+              onChange={handleGateChange}
+            />
+          </label>
+          <label>
+            <div className="text-xs">Base Note</div>
+            <select
+              className="w-full"
+              onChange={(event) => setBaseNote(event.target.value)}
+            >
+              <option value="not_set">Select base note</option>
+              {ALPHA_NAMES.map((note) => (
+                <option key={note} value={note}>
+                  {note}
+                </option>
+              ))}
+            </select>
+          </label>
           <label>
             <div className="text-xs">Octave</div>
-            <select onChange={(event) => setOctave(event.target.value)}>
+            <select
+              className="w-full"
+              onChange={(event) => setOctave(event.target.value)}
+            >
               <option value={'not_set'}>Select octave</option>
               {OCTAVES.map((octave) => (
                 <option key={octave} value={octave}>
@@ -170,11 +201,12 @@ export function Sequencer() {
               ))}
             </select>
           </label>
-        )}
-        {octave !== 'not_set' && (
           <label>
             <div className="text-xs">Scale</div>
-            <select onChange={(event) => onSelectScale(event.target.value)}>
+            <select
+              className="w-full"
+              onChange={(event) => onSelectScale(event.target.value)}
+            >
               <option value={'not_set'}>Select a scale</option>
               {SCALES.map((scale) => (
                 <option key={scale[0]} value={scale[1]}>
@@ -183,14 +215,14 @@ export function Sequencer() {
               ))}
             </select>
           </label>
-        )}
+        </div>
         <div>
           <Button onClick={isPlaying ? stopSequence : playSequence}>
             {isPlaying ? 'STOP' : 'START'}
           </Button>
         </div>
       </div>
-      <div className="flex flex-col w-full">
+      <div className="flex flex-col w-full overflow-y-auto">
         {!sequence.current ? (
           <div className="size-full flex flex-col justify-center place-self-stretch text-center self-stretch">
             <div>Select a scale for the sequence</div>

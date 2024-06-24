@@ -332,7 +332,7 @@ export function Workspace() {
       <div
         ref={workspaceDivRef}
         className={clsx(
-          'fixed flex flex-col w-screen h-screen top-0 left-0 select-none ',
+          'fixed flex flex-col w-screen h-screen top-0 left-0 select-none bg-zinc-100 dark:bg-zinc-900',
           {
             'cursor-grab': spaceIsPressed,
             'cursor-grabbing': isGrabbing,
