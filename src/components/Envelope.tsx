@@ -1,21 +1,18 @@
 import * as Tone from 'tone'
 import { DestinationSelect } from './DestinationSelect'
-import { useWorkspace } from './Workspace'
+import { DeserializedModuleData, useWorkspace } from './Workspace'
 
 export function Envelope({
-  id,
-  name,
-  node,
+  moduleData,
   onRemove,
   onConnect,
 }: {
-  id: string
-  name: string
-  node: Tone.Envelope
+  moduleData: DeserializedModuleData<'envelope'>
   onRemove: (id: string) => void
   onConnect: (destinationId: string) => void
 }) {
-  const { nodes } = useWorkspace()
+  const { modules } = useWorkspace()
+  const { id, name, node } = moduleData
 
   const onParameterChange = (
     parameter: 'attack' | 'decay' | 'sustain' | 'release',
@@ -100,7 +97,8 @@ export function Envelope({
         </button>
       </div>
       <DestinationSelect
-        destinations={nodes.filter((node) => node.id !== id)}
+        destinations={modules.filter((module) => module.id !== id)}
+        initialValue={moduleData.destinations[0] ?? 'not_set'}
         onChange={onConnect}
       />
     </div>

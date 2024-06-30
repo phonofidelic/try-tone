@@ -9,65 +9,51 @@ import { Envelope } from './Envelope'
 import ContextMenu from './ContextMenu'
 import Filter from './Filter'
 import { Button } from './Button'
-import { clamp, translateCoordinates } from '../utils'
+import { clamp, deserializeModuleState, translateCoordinates } from '../utils'
 import { Sequencer } from './Sequencer'
-
-export type OscillatorData = {
-  id: string
-  name: string
-  node: Tone.Oscillator
-}
-export type VcaData = {
-  id: string
-  name: string
-  node: Tone.Volume
-}
-export type EnvelopeData = {
-  id: string
-  name: string
-  node: Tone.Envelope
-}
-
-export type MixerData = {
-  id: string
-  name: string
-  node: Tone.Merge
-}
 
 export type ModuleData = {
   id: string
   name: string
   sources: string[]
   destinations: string[]
+  position: { x: number; y: number } | null
+  type: ModuleType
+}
+
+export type ModuleType = 'oscillator' | 'vca' | 'envelope' | 'mixer' | 'filter'
+
+export type DeserializedModuleData<T> = ModuleData & {
+  type: T
 } & (
-  | {
-      type: 'oscillator'
-      node: Tone.Oscillator
-    }
-  | {
-      type: 'vca'
-      node: Tone.Volume
-    }
-  | {
-      type: 'envelope'
-      node: Tone.AmplitudeEnvelope
-    }
-  | {
-      type: 'mixer'
-      node: Tone.Merge
-    }
-  | {
-      type: 'filter'
-      node: Tone.Filter
-    }
-)
+    | {
+        type: 'oscillator'
+        node: Tone.Oscillator
+      }
+    | {
+        type: 'vca'
+        node: Tone.Volume
+      }
+    | {
+        type: 'envelope'
+        node: Tone.AmplitudeEnvelope
+      }
+    | {
+        type: 'mixer'
+        node: Tone.Merge
+      }
+    | {
+        type: 'filter'
+        node: Tone.Filter
+      }
+  )
 
 type WorkspaceContextValue = {
-  nodes: ModuleData[]
-  addNode: (newNode: ModuleData) => void
-  removeNode: (nodeId: string) => void
-  connectNodes: (source: string, destination: string) => void
-  removeAllNodes: () => void
+  modules: DeserializedModuleData<ModuleType>[]
+  addModule: (newModule: DeserializedModuleData<ModuleType>) => void
+  removeModule: (moduleId: string) => void
+  connectModules: (source: string, destination: string) => void
+  removeAllModules: () => void
 }
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)
@@ -77,137 +63,176 @@ export function WorkspaceContextProvider({
 }: {
   children: React.ReactNode
 }) {
-  const initialMixerData: ModuleData = {
-    id: crypto.randomUUID(),
-    type: 'mixer',
-    name: 'Mixer',
-    node: new Tone.Merge().toDestination(),
-    sources: [],
-    destinations: ['out'],
-  }
-
-  const [nodes, setNodes] = useState<ModuleData[]>([
-    {
-      id: crypto.randomUUID(),
-      type: 'oscillator',
-      name: 'Oscillator 1',
-      node: new Tone.Oscillator(440, 'sine').connect(initialMixerData.node),
-      sources: [],
-      destinations: [initialMixerData.id],
+  const [modules, setModules] = useState<DeserializedModuleData<ModuleType>[]>(
+    () => {
+      const serializedModuleState = localStorage.getItem('moduleState')
+      if (serializedModuleState) {
+        return deserializeModuleState(serializedModuleState)
+      }
+      return []
     },
-    initialMixerData,
-  ])
+  )
 
-  const addNode = (newNode: ModuleData) => {
-    setNodes([...nodes, newNode])
+  const addModule = (newModule: DeserializedModuleData<ModuleType>) => {
+    setModules([...modules, newModule])
   }
 
-  const removeNode = (nodeId: string) => {
-    const nodeToRemove = nodes.find((node) => node.id === nodeId)
+  const removeModule = (moduleId: string) => {
+    const moduleToRemove = modules.find((module) => module.id === moduleId)
 
-    if (!nodeToRemove) {
+    if (!moduleToRemove) {
       return
     }
 
-    const mutatedNodeList = nodes
-      .map((node) => ({
-        ...node,
-        sources: node.sources.filter(
-          (sourceId) => sourceId !== nodeToRemove.id,
+    const mutatedNodeList = modules
+      .map((module) => ({
+        ...module,
+        sources: module.sources.filter(
+          (sourceId) => sourceId !== moduleToRemove.id,
         ),
-        destinations: nodes
-          .filter((node) => node.id !== nodeToRemove.id)
-          .map((node) => node.id),
+        destinations: modules
+          .filter((module) => module.id !== moduleToRemove.id)
+          .map((module) => module.id),
       }))
-      .filter((node) => node.id !== nodeToRemove.id)
+      .filter((module) => module.id !== moduleToRemove.id)
 
-    setNodes(mutatedNodeList)
-    nodeToRemove.node.disconnect().dispose()
+    setModules(mutatedNodeList)
+    moduleToRemove.node.disconnect().dispose()
   }
 
-  const connectNodes = (sourceId: string, destinationId: string) => {
-    const sourceNode = nodes.find((node) => node.id === sourceId)
-    if (!sourceNode) {
+  const connectModules = (sourceId: string, destinationId: string) => {
+    const sourceModule = modules.find((module) => module.id === sourceId)
+    if (!sourceModule) {
       return
     }
 
     if (destinationId === 'not_set') {
-      setNodes(
-        nodes.map((node) =>
-          node.id === sourceNode.id
+      setModules(
+        modules.map((module) =>
+          module.id === sourceModule.id
             ? {
-                ...sourceNode,
+                ...sourceModule,
                 destinations: ['not_set'],
               }
-            : node,
+            : module,
         ),
       )
 
-      sourceNode.node.disconnect()
+      sourceModule.node.disconnect()
       return
     }
 
     if (destinationId === 'out') {
-      setNodes(
-        nodes.map((node) =>
-          node.id === sourceNode.id
+      setModules(
+        modules.map((module) =>
+          module.id === sourceModule.id
             ? {
-                ...sourceNode,
+                ...sourceModule,
                 destinations: ['out'],
               }
-            : node,
+            : module,
         ),
       )
 
-      sourceNode.node.disconnect()
-      sourceNode.node.toDestination()
+      sourceModule.node.disconnect()
+      sourceModule.node.toDestination()
       return
     }
 
-    const destinationNode = nodes.find((node) => node.id === destinationId)
-    if (!destinationNode) {
+    const destinationModule = modules.find(
+      (module) => module.id === destinationId,
+    )
+    if (!destinationModule) {
       return
     }
 
-    setNodes(
-      nodes.map((node) => {
-        if (node.id === sourceNode.id) {
+    setModules(
+      modules.map((module) => {
+        if (module.id === sourceModule.id) {
           return {
-            ...sourceNode,
-            destinations: [destinationNode.id],
+            ...sourceModule,
+            destinations: [destinationModule.id],
           }
         }
 
-        if (node.id === destinationNode.id) {
+        if (module.id === destinationModule.id) {
           return {
-            ...destinationNode,
-            sources: [sourceNode.id],
+            ...destinationModule,
+            sources: [sourceModule.id],
           }
         }
 
-        return node
+        return module
       }),
     )
 
-    sourceNode.node.disconnect()
-    sourceNode.node.connect(destinationNode.node)
+    sourceModule.node.disconnect()
+    sourceModule.node.connect(destinationModule.node)
   }
 
-  const removeAllNodes = () => {
-    nodes.forEach((node) => {
-      node.node.disconnect().dispose()
+  const removeAllModules = () => {
+    modules.forEach((module) => {
+      module.node.disconnect().dispose()
     })
-    setNodes([])
+    setModules([])
   }
+
+  useEffect(() => {
+    const serializedModuleState = localStorage.getItem('moduleState')
+    if (serializedModuleState) {
+      const deserializedModuleState = deserializeModuleState(
+        serializedModuleState,
+      )
+
+      deserializedModuleState.forEach((module) => {
+        for (const connectionId of module.destinations) {
+          if (connectionId === 'out') {
+            module.node.toDestination()
+          } else {
+            const destinationModule = deserializedModuleState.find(
+              (moduleData) => moduleData.id === connectionId,
+            )
+            if (destinationModule) {
+              module.node.connect(destinationModule.node)
+            }
+          }
+        }
+      })
+
+      setModules(deserializedModuleState)
+    } else {
+      setModules([
+        {
+          id: crypto.randomUUID(),
+          type: 'oscillator',
+          name: 'Oscillator 1',
+          node: new Tone.Oscillator(440, 'sine'),
+          sources: [],
+          destinations: [],
+          position: null,
+        },
+      ])
+    }
+  }, [])
+
+  useEffect(() => {
+    const moduleState = modules.map((moduleData) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { node, ...rest } = moduleData
+      return rest
+    })
+    const stringifiedState = JSON.stringify(moduleState)
+    localStorage.setItem('moduleState', stringifiedState)
+  }, [modules])
 
   return (
     <WorkspaceContext.Provider
       value={{
-        nodes,
-        addNode,
-        removeNode,
-        connectNodes,
-        removeAllNodes,
+        modules: modules,
+        addModule: addModule,
+        removeModule: removeModule,
+        connectModules: connectModules,
+        removeAllModules: removeAllModules,
       }}
     >
       {children}
@@ -229,7 +254,7 @@ export function useWorkspace() {
 }
 
 export function Workspace() {
-  const { nodes, addNode, removeNode, connectNodes, removeAllNodes } =
+  const { modules, addModule, removeModule, connectModules, removeAllModules } =
     useWorkspace()
   const defaultOriginCoordinates = {
     x: window.innerWidth / 2,
@@ -299,8 +324,9 @@ export function Workspace() {
       >
         <div className="flex flex-col space-y-2 *:shadow">
           <Toolbar
-            nodes={nodes}
-            addNode={addNode}
+            modules={modules}
+            clickOrigin={contextMenuClickOrigin}
+            addModule={addModule}
             onSelect={() => {
               setContextMenuOpen(false)
             }}
@@ -309,12 +335,12 @@ export function Workspace() {
       </ContextMenu>
       <div className="fixed top-0 flex w-screen p-2 z-10">
         <div className="flex space-x-2">
-          <Toolbar nodes={nodes} addNode={addNode} />
+          <Toolbar modules={modules} addModule={addModule} />
         </div>
         <div className="flex w-full space-x-2 justify-end">
           <Button
             onClick={() => {
-              removeAllNodes()
+              removeAllModules()
             }}
           >
             Clear Workspace
@@ -370,26 +396,24 @@ export function Workspace() {
             transform: `scale(${1 / scale}) translate(${screenOffset.x}px, ${screenOffset.y}px)`,
           }}
         >
-          {nodes.map((node) => {
-            switch (node.type) {
+          {modules.map((module) => {
+            switch (module.type) {
               case 'oscillator':
                 return (
                   <Tile
-                    key={node.id}
+                    key={module.id}
                     initialPos={translateCoordinates(
-                      defaultOriginCoordinates,
+                      module.position ?? defaultOriginCoordinates,
                       screenOffset,
                     )}
                     scale={scale}
                   >
                     <Oscillator
-                      key={node.id}
-                      id={node.id}
-                      name={node.name}
-                      node={node.node}
-                      onRemove={removeNode}
+                      key={module.id}
+                      moduleData={module}
+                      onRemove={removeModule}
                       onConnect={(destinationId) =>
-                        connectNodes(node.id, destinationId)
+                        connectModules(module.id, destinationId)
                       }
                     />
                   </Tile>
@@ -397,21 +421,19 @@ export function Workspace() {
               case 'vca':
                 return (
                   <Tile
-                    key={node.id}
+                    key={module.id}
                     initialPos={translateCoordinates(
-                      defaultOriginCoordinates,
+                      module.position ?? defaultOriginCoordinates,
                       screenOffset,
                     )}
                     scale={scale}
                   >
                     <Vca
-                      key={node.id}
-                      id={node.id}
-                      name={node.name}
-                      node={node.node}
-                      onRemove={removeNode}
+                      key={module.id}
+                      moduleData={module}
+                      onRemove={removeModule}
                       onConnect={(destinationId) =>
-                        connectNodes(node.id, destinationId)
+                        connectModules(module.id, destinationId)
                       }
                     />
                   </Tile>
@@ -419,21 +441,19 @@ export function Workspace() {
               case 'envelope':
                 return (
                   <Tile
-                    key={node.id}
+                    key={module.id}
                     initialPos={translateCoordinates(
-                      defaultOriginCoordinates,
+                      module.position ?? defaultOriginCoordinates,
                       screenOffset,
                     )}
                     scale={scale}
                   >
                     <Envelope
-                      key={node.id}
-                      id={node.id}
-                      name={node.name}
-                      node={node.node}
-                      onRemove={removeNode}
+                      key={module.id}
+                      moduleData={module}
+                      onRemove={removeModule}
                       onConnect={(destinationId) =>
-                        connectNodes(node.id, destinationId)
+                        connectModules(module.id, destinationId)
                       }
                     />
                   </Tile>
@@ -441,21 +461,19 @@ export function Workspace() {
               case 'filter':
                 return (
                   <Tile
-                    key={node.id}
+                    key={module.id}
                     initialPos={translateCoordinates(
-                      defaultOriginCoordinates,
+                      module.position ?? defaultOriginCoordinates,
                       screenOffset,
                     )}
                     scale={scale}
                   >
                     <Filter
-                      key={node.id}
-                      id={node.id}
-                      name={node.name}
-                      node={node.node}
-                      onRemove={removeNode}
+                      key={module.id}
+                      moduleData={module}
+                      onRemove={removeModule}
                       onConnect={(destinationId) =>
-                        connectNodes(node.id, destinationId)
+                        connectModules(module.id, destinationId)
                       }
                     />
                   </Tile>

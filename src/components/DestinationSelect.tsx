@@ -11,14 +11,16 @@ export function DestinationSelect({
   onChange: (value: string) => void
   className?: string
 }) {
-  const initialDestination = destinations.find(
-    (destination) => destination.id === initialValue,
-  )
+  const initialDestinationId =
+    initialValue === 'out'
+      ? 'out'
+      : destinations.find((destination) => destination.id === initialValue)?.id
+
   return (
     <select
       aria-label="destination"
       name="destination"
-      defaultValue={initialDestination?.id}
+      defaultValue={initialDestinationId}
       onChange={(event) => onChange(event.target.value)}
       className={className}
     >

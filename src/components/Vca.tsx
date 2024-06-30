@@ -1,22 +1,18 @@
 import { useState } from 'react'
-import * as Tone from 'tone'
 import { DestinationSelect } from './DestinationSelect'
-import { useWorkspace } from './Workspace'
+import { DeserializedModuleData, useWorkspace } from './Workspace'
 
 export function Vca({
-  id,
-  name,
-  node,
+  moduleData,
   onRemove,
   onConnect,
 }: {
-  id: string
-  name: string
-  node: Tone.Volume
+  moduleData: DeserializedModuleData<'vca'>
   onRemove: (id: string) => void
   onConnect: (destinationId: string) => void
 }) {
-  const { nodes } = useWorkspace()
+  const { modules } = useWorkspace()
+  const { id, name, node } = moduleData
   const [volumeLevel, setVolumeLevel] = useState(node.volume.value)
 
   const onVolumeChange = (value: number) => {
@@ -46,8 +42,8 @@ export function Vca({
       />
       <button onClick={handleRemove}>Remove</button>
       <DestinationSelect
-        destinations={nodes.filter((node) => node.id !== id)}
-        initialValue={'not_set'}
+        destinations={modules.filter((module) => module.id !== id)}
+        initialValue={moduleData.destinations[0] ?? 'not_set'}
         onChange={onConnect}
       />
     </div>

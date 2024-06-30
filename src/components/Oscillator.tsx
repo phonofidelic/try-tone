@@ -1,27 +1,24 @@
 import { useState } from 'react'
 import * as Tone from 'tone'
 import { DestinationSelect } from './DestinationSelect'
-import { useWorkspace } from './Workspace'
+import { DeserializedModuleData, useWorkspace } from './Workspace'
 
 export function Oscillator({
-  id,
-  name,
-  node,
+  moduleData,
   onRemove,
   onConnect,
 }: {
-  id: string
-  name: string
-  node: Tone.Oscillator
+  moduleData: DeserializedModuleData<'oscillator'>
   onRemove: (id: string) => void
   onConnect: (destinationId: string) => void
 }) {
+  const { id, name, node } = moduleData
   const [frequency, setFrequency] = useState(440)
   const [displayState, setDisplayState] = useState<'started' | 'stopped'>(
     'stopped',
   )
 
-  const { nodes } = useWorkspace()
+  const { modules } = useWorkspace()
 
   const onFrequencyChange = (value: number) => {
     setFrequency(value)
@@ -63,8 +60,8 @@ export function Oscillator({
         </button>
       </div>
       <DestinationSelect
-        destinations={nodes.filter((node) => node.id !== id)}
-        initialValue={'not_set'}
+        destinations={modules.filter((module) => module.id !== id)}
+        initialValue={moduleData.destinations[0] ?? 'not_set'}
         onChange={onConnect}
       />
     </div>

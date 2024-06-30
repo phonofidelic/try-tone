@@ -6,7 +6,7 @@ import {
   numericalDegreesStringToScaleArray,
 } from '../utils'
 import clsx from 'clsx'
-import { ModuleData, useWorkspace } from './Workspace'
+import { DeserializedModuleData, ModuleType, useWorkspace } from './Workspace'
 import { DestinationSelect } from './DestinationSelect'
 import { Button } from './Button'
 import { ALPHA_NAMES, OCTAVES, SCALES } from '../constants'
@@ -18,16 +18,16 @@ interface Note {
 }
 
 export function Sequencer() {
-  const [isExpanded, setIsExpanded] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(false)
   const [baseNote, setBaseNote] = useState('not_set')
   const [octave, setOctave] = useState('not_set')
   const [scale, setScale] = useState<number[]>([])
   const sequence = useRef<ReturnType<typeof makeGrid> | null>(null)
-  const { nodes } = useWorkspace()
-  const [destinationNode, setDestinationNode] = useState<ModuleData | null>(
-    null,
-  )
-  const [gateNode, setGateNode] = useState<ModuleData | null>(null)
+  const { modules } = useWorkspace()
+  const [destinationModule, setDestinationModule] =
+    useState<DeserializedModuleData<ModuleType> | null>(null)
+  const [gateModule, setGateModule] =
+    useState<DeserializedModuleData<ModuleType> | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [playingIndex, setPLayingIndex] = useState(0)
   const [, setActiveNote] = useState<Note | null>(null)
@@ -52,11 +52,11 @@ export function Sequencer() {
   }
 
   const handleDestinationChange = (id: string) => {
-    setDestinationNode(nodes.find((node) => node.id === id) ?? null)
+    setDestinationModule(modules.find((module) => module.id === id) ?? null)
   }
 
   const handleGateChange = (id: string) => {
-    setGateNode(nodes.find((node) => node.id === id) ?? null)
+    setGateModule(modules.find((module) => module.id === id) ?? null)
   }
 
   const playSequence = () => {
@@ -95,7 +95,7 @@ export function Sequencer() {
   }, [baseNote, octave, scale])
 
   useEffect(() => {
-    if (!transportRef.current || !destinationNode || !gateNode) {
+    if (!transportRef.current || !destinationModule || !gateModule) {
       return
     }
 
@@ -105,12 +105,12 @@ export function Sequencer() {
       }
       sequence.current.forEach((row) => {
         const note = row.value[beat]
-        if (destinationNode.type === 'oscillator' && note.isActive) {
-          destinationNode.node.frequency.rampTo(note.note, 0, time)
+        if (destinationModule.type === 'oscillator' && note.isActive) {
+          destinationModule.node.frequency.rampTo(note.note, 0, time)
         }
 
-        if (gateNode.type === 'envelope' && note.isActive) {
-          gateNode.node.triggerAttackRelease(0.5)
+        if (gateModule.type === 'envelope' && note.isActive) {
+          gateModule.node.triggerAttackRelease(0.5)
         }
       })
     }
@@ -127,7 +127,7 @@ export function Sequencer() {
       transportRef.current.scheduleRepeat(onRepeat, '8n')
       isRepeatScheduled.current = true
     }
-  }, [destinationNode, gateNode])
+  }, [destinationModule, gateModule])
 
   return (
     <div
@@ -159,7 +159,9 @@ export function Sequencer() {
             <div className="text-xs">V/Oct out</div>
             <DestinationSelect
               className="w-full"
-              destinations={nodes.filter((node) => node.type === 'oscillator')}
+              destinations={modules.filter(
+                (module) => module.type === 'oscillator',
+              )}
               initialValue={'not_set'}
               onChange={handleDestinationChange}
             />
@@ -168,7 +170,9 @@ export function Sequencer() {
             <div className="text-xs">Gate out</div>
             <DestinationSelect
               className="w-full"
-              destinations={nodes.filter((node) => node.type === 'envelope')}
+              destinations={modules.filter(
+                (module) => module.type === 'envelope',
+              )}
               initialValue={'not_set'}
               onChange={handleGateChange}
             />

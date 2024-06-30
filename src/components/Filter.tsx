@@ -1,22 +1,19 @@
 import * as Tone from 'tone'
 import { DestinationSelect } from './DestinationSelect'
-import { useWorkspace } from './Workspace'
+import { DeserializedModuleData, useWorkspace } from './Workspace'
 import { useRef, useState } from 'react'
 
 export default function Filter({
-  id,
-  name,
-  node,
+  moduleData,
   onRemove,
   onConnect,
 }: {
-  id: string
-  name: string
-  node: Tone.Filter
+  moduleData: DeserializedModuleData<'filter'>
   onRemove: (id: string) => void
   onConnect: (destinationId: string) => void
 }) {
-  const { nodes } = useWorkspace()
+  const { id, name, node } = moduleData
+  const { modules } = useWorkspace()
   const [frequency, setFrequency] = useState(20)
   const [frequencyType, setFrequencyType] = useState('bandpass')
 
@@ -61,7 +58,7 @@ export default function Filter({
         </button>
       </div>
       <DestinationSelect
-        destinations={nodes.filter((node) => node.id !== id)}
+        destinations={modules.filter((module) => module.id !== id)}
         initialValue={'not_set'}
         onChange={onConnect}
       />
