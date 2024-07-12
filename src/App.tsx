@@ -1,9 +1,12 @@
 import { Workspace, WorkspaceContextProvider } from './components/Workspace'
+import { AudioNodeContextProvider } from './AudioNodeContext'
 
 function App() {
   return (
     <WorkspaceContextProvider>
-      <Workspace />
+      <AudioNodeContextProvider>
+        <Workspace />
+      </AudioNodeContextProvider>
     </WorkspaceContextProvider>
   )
 }

@@ -1,4 +1,4 @@
-import * as Tone from 'tone'
+import { ModuleData, ModuleType } from './Workspace'
 
 export function DestinationSelect({
   destinations,
@@ -6,7 +6,7 @@ export function DestinationSelect({
   onChange,
   className,
 }: {
-  destinations: { id: string; name: string; node: Tone.OutputNode }[]
+  destinations: ModuleData<ModuleType>[]
   initialValue?: string
   onChange: (value: string) => void
   className?: string

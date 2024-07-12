@@ -1,9 +1,3 @@
-import * as Tone from 'tone'
-import {
-  DeserializedModuleData,
-  ModuleData,
-  ModuleType,
-} from './components/Workspace'
 import { ALPHA_NAMES, MIDI_FLAT_NAMES, MIDI_SHARP_NAMES } from './constants'
 
 export const clamp = (value: number, min: number, max: number) => {
@@ -84,49 +78,4 @@ export function numericalDegreesStringToScaleArray(scaleString: string) {
   return scaleString
     .split('-')
     .map((numericalDegree) => parseInt(numericalDegree) - 1)
-}
-
-export function serializeModuleState(
-  deserializedModuleState: DeserializedModuleData<ModuleType>[],
-) {
-  const moduleState = deserializedModuleState.map((moduleData) => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { node, ...rest } = moduleData
-    return rest
-  })
-
-  return JSON.stringify(moduleState)
-}
-
-export function deserializeModuleState(serializedModuleState: string) {
-  const moduleState = JSON.parse(serializedModuleState) as ModuleData[]
-
-  return moduleState.map((moduleData) => ({
-    ...moduleData,
-    node: deserializeModuleData(moduleData.type),
-  })) as DeserializedModuleData<ModuleType>[]
-}
-
-function deserializeModuleData(moduleType: ModuleData['type']) {
-  switch (moduleType) {
-    case 'oscillator':
-      return new Tone.Oscillator()
-
-    case 'vca':
-      return new Tone.Volume()
-
-    case 'envelope':
-      return new Tone.AmplitudeEnvelope({
-        attack: 0.1,
-        decay: 0.2,
-        sustain: 1.0,
-        release: 0.8,
-      })
-
-    case 'mixer':
-      return new Tone.Merge()
-
-    case 'filter':
-      return new Tone.Filter()
-  }
 }

@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import * as Tone from 'tone'
+import { Dexie, type EntityTable } from 'dexie'
+import { useLiveQuery } from 'dexie-react-hooks'
 import { Toolbar } from './Toolbar'
 import Tile from './Tile'
 import { Oscillator } from './Oscillator'
@@ -9,50 +11,65 @@ import { Envelope } from './Envelope'
 import ContextMenu from './ContextMenu'
 import Filter from './Filter'
 import { Button } from './Button'
-import { clamp, deserializeModuleState, translateCoordinates } from '../utils'
+import { clamp, translateCoordinates } from '../utils'
 import { Sequencer } from './Sequencer'
 
-export type ModuleData = {
+// eslint-disable-next-line react-refresh/only-export-components
+export const db = new Dexie('ModuleDatabase') as Dexie & {
+  modules: EntityTable<ModuleData<ModuleType>, 'id'>
+}
+db.version(1).stores({
+  modules: '++id',
+})
+
+export type ModuleType = 'oscillator' | 'vca' | 'envelope' | 'filter'
+
+export type ModuleData<T> = {
   id: string
   name: string
   sources: string[]
   destinations: string[]
-  position: { x: number; y: number } | null
-  type: ModuleType
-}
-
-export type ModuleType = 'oscillator' | 'vca' | 'envelope' | 'mixer' | 'filter'
-
-export type DeserializedModuleData<T> = ModuleData & {
   type: T
 } & (
-    | {
-        type: 'oscillator'
-        node: Tone.Oscillator
+  | {
+      type: 'oscillator'
+      settings: {
+        frequency: number
+        type: Tone.ToneOscillatorType
       }
-    | {
-        type: 'vca'
-        node: Tone.Volume
+    }
+  | {
+      type: 'vca'
+      settings: {
+        volume: number
       }
-    | {
-        type: 'envelope'
-        node: Tone.AmplitudeEnvelope
+    }
+  | {
+      type: 'envelope'
+      settings: {
+        attack: number
+        decay: number
+        sustain: number
+        release: number
       }
-    | {
-        type: 'mixer'
-        node: Tone.Merge
+    }
+  | {
+      type: 'filter'
+      settings: {
+        frequency: number
+        type: 'highpass' | 'bandpass' | 'lowpass'
       }
-    | {
-        type: 'filter'
-        node: Tone.Filter
-      }
-  )
+    }
+)
 
 type WorkspaceContextValue = {
-  modules: DeserializedModuleData<ModuleType>[]
-  addModule: (newModule: DeserializedModuleData<ModuleType>) => void
+  modules: ModuleData<ModuleType>[]
+  addModule: (newModule: ModuleData<ModuleType>) => void
+  editModule<TModuleType>(
+    moduleId: string,
+    update: Partial<ModuleData<TModuleType>>,
+  ): void
   removeModule: (moduleId: string) => void
-  connectModules: (source: string, destination: string) => void
   removeAllModules: () => void
 }
 
@@ -63,176 +80,43 @@ export function WorkspaceContextProvider({
 }: {
   children: React.ReactNode
 }) {
-  const [modules, setModules] = useState<DeserializedModuleData<ModuleType>[]>(
-    () => {
-      const serializedModuleState = localStorage.getItem('moduleState')
-      if (serializedModuleState) {
-        return deserializeModuleState(serializedModuleState)
-      }
-      return []
-    },
+  const modules = useLiveQuery<ModuleData<ModuleType>[], null>(
+    () => db.modules.toArray(),
+    [],
+    null,
   )
 
-  const addModule = (newModule: DeserializedModuleData<ModuleType>) => {
-    setModules([...modules, newModule])
+  const addModule = async (newModule: ModuleData<ModuleType>) => {
+    await db.modules.add(newModule)
   }
 
-  const removeModule = (moduleId: string) => {
-    const moduleToRemove = modules.find((module) => module.id === moduleId)
-
-    if (!moduleToRemove) {
-      return
-    }
-
-    const mutatedNodeList = modules
-      .map((module) => ({
-        ...module,
-        sources: module.sources.filter(
-          (sourceId) => sourceId !== moduleToRemove.id,
-        ),
-        destinations: modules
-          .filter((module) => module.id !== moduleToRemove.id)
-          .map((module) => module.id),
-      }))
-      .filter((module) => module.id !== moduleToRemove.id)
-
-    setModules(mutatedNodeList)
-    moduleToRemove.node.disconnect().dispose()
+  async function editModule<TModuleType>(
+    moduleId: string,
+    update: Partial<ModuleData<TModuleType>>,
+  ) {
+    await db.modules.update(moduleId, { ...update })
   }
 
-  const connectModules = (sourceId: string, destinationId: string) => {
-    const sourceModule = modules.find((module) => module.id === sourceId)
-    if (!sourceModule) {
-      return
-    }
-
-    if (destinationId === 'not_set') {
-      setModules(
-        modules.map((module) =>
-          module.id === sourceModule.id
-            ? {
-                ...sourceModule,
-                destinations: ['not_set'],
-              }
-            : module,
-        ),
-      )
-
-      sourceModule.node.disconnect()
-      return
-    }
-
-    if (destinationId === 'out') {
-      setModules(
-        modules.map((module) =>
-          module.id === sourceModule.id
-            ? {
-                ...sourceModule,
-                destinations: ['out'],
-              }
-            : module,
-        ),
-      )
-
-      sourceModule.node.disconnect()
-      sourceModule.node.toDestination()
-      return
-    }
-
-    const destinationModule = modules.find(
-      (module) => module.id === destinationId,
-    )
-    if (!destinationModule) {
-      return
-    }
-
-    setModules(
-      modules.map((module) => {
-        if (module.id === sourceModule.id) {
-          return {
-            ...sourceModule,
-            destinations: [destinationModule.id],
-          }
-        }
-
-        if (module.id === destinationModule.id) {
-          return {
-            ...destinationModule,
-            sources: [sourceModule.id],
-          }
-        }
-
-        return module
-      }),
-    )
-
-    sourceModule.node.disconnect()
-    sourceModule.node.connect(destinationModule.node)
+  const removeModule = async (moduleId: string) => {
+    await db.modules.delete(moduleId)
   }
 
-  const removeAllModules = () => {
-    modules.forEach((module) => {
-      module.node.disconnect().dispose()
-    })
-    setModules([])
+  const removeAllModules = async () => {
+    await db.modules.clear()
   }
 
-  useEffect(() => {
-    const serializedModuleState = localStorage.getItem('moduleState')
-    if (serializedModuleState) {
-      const deserializedModuleState = deserializeModuleState(
-        serializedModuleState,
-      )
-
-      deserializedModuleState.forEach((module) => {
-        for (const connectionId of module.destinations) {
-          if (connectionId === 'out') {
-            module.node.toDestination()
-          } else {
-            const destinationModule = deserializedModuleState.find(
-              (moduleData) => moduleData.id === connectionId,
-            )
-            if (destinationModule) {
-              module.node.connect(destinationModule.node)
-            }
-          }
-        }
-      })
-
-      setModules(deserializedModuleState)
-    } else {
-      setModules([
-        {
-          id: crypto.randomUUID(),
-          type: 'oscillator',
-          name: 'Oscillator 1',
-          node: new Tone.Oscillator(440, 'sine'),
-          sources: [],
-          destinations: [],
-          position: null,
-        },
-      ])
-    }
-  }, [])
-
-  useEffect(() => {
-    const moduleState = modules.map((moduleData) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { node, ...rest } = moduleData
-      return rest
-    })
-    const stringifiedState = JSON.stringify(moduleState)
-    localStorage.setItem('moduleState', stringifiedState)
-  }, [modules])
+  if (!modules) {
+    return null
+  }
 
   return (
     <WorkspaceContext.Provider
       value={{
-        modules: modules,
-        addModule: addModule,
-        removeModule: removeModule,
-        connectModules: connectModules,
-        removeAllModules: removeAllModules,
+        modules,
+        addModule,
+        editModule,
+        removeModule,
+        removeAllModules,
       }}
     >
       {children}
@@ -254,8 +138,9 @@ export function useWorkspace() {
 }
 
 export function Workspace() {
-  const { modules, addModule, removeModule, connectModules, removeAllModules } =
-    useWorkspace()
+  const modules = useLiveQuery(() => db.modules.toArray()) ?? []
+  const { removeAllModules } = useWorkspace()
+
   const defaultOriginCoordinates = {
     x: window.innerWidth / 2,
     y: window.innerHeight / 2,
@@ -325,8 +210,6 @@ export function Workspace() {
         <div className="flex flex-col space-y-2 *:shadow">
           <Toolbar
             modules={modules}
-            clickOrigin={contextMenuClickOrigin}
-            addModule={addModule}
             onSelect={() => {
               setContextMenuOpen(false)
             }}
@@ -335,7 +218,7 @@ export function Workspace() {
       </ContextMenu>
       <div className="fixed top-0 flex w-screen p-2 z-10">
         <div className="flex space-x-2">
-          <Toolbar modules={modules} addModule={addModule} />
+          <Toolbar modules={modules} />
         </div>
         <div className="flex w-full space-x-2 justify-end">
           <Button
@@ -401,85 +284,63 @@ export function Workspace() {
               case 'oscillator':
                 return (
                   <Tile
-                    key={module.id}
+                    key={`tile_${module.id}`}
+                    id={`tile_${module.id}`}
                     initialPos={translateCoordinates(
-                      module.position ?? defaultOriginCoordinates,
+                      defaultOriginCoordinates,
                       screenOffset,
                     )}
                     scale={scale}
+                    header={module.name}
                   >
-                    <Oscillator
-                      key={module.id}
-                      moduleData={module}
-                      onRemove={removeModule}
-                      onConnect={(destinationId) =>
-                        connectModules(module.id, destinationId)
-                      }
-                    />
+                    <Oscillator key={module.id} moduleData={module} />
                   </Tile>
                 )
               case 'vca':
                 return (
                   <Tile
-                    key={module.id}
+                    key={`tile_${module.id}`}
+                    id={`tile_${module.id}`}
                     initialPos={translateCoordinates(
-                      module.position ?? defaultOriginCoordinates,
+                      defaultOriginCoordinates,
                       screenOffset,
                     )}
                     scale={scale}
+                    header={module.name}
                   >
-                    <Vca
-                      key={module.id}
-                      moduleData={module}
-                      onRemove={removeModule}
-                      onConnect={(destinationId) =>
-                        connectModules(module.id, destinationId)
-                      }
-                    />
+                    <Vca key={module.id} moduleData={module} />
                   </Tile>
                 )
               case 'envelope':
                 return (
                   <Tile
-                    key={module.id}
+                    key={`tile_${module.id}`}
+                    id={`tile_${module.id}`}
                     initialPos={translateCoordinates(
-                      module.position ?? defaultOriginCoordinates,
+                      defaultOriginCoordinates,
                       screenOffset,
                     )}
                     scale={scale}
+                    header={module.name}
                   >
-                    <Envelope
-                      key={module.id}
-                      moduleData={module}
-                      onRemove={removeModule}
-                      onConnect={(destinationId) =>
-                        connectModules(module.id, destinationId)
-                      }
-                    />
+                    <Envelope key={module.id} moduleData={module} />
                   </Tile>
                 )
               case 'filter':
                 return (
                   <Tile
-                    key={module.id}
+                    key={`tile_${module.id}`}
+                    id={`tile_${module.id}`}
                     initialPos={translateCoordinates(
-                      module.position ?? defaultOriginCoordinates,
+                      defaultOriginCoordinates,
                       screenOffset,
                     )}
                     scale={scale}
+                    header={module.name}
                   >
-                    <Filter
-                      key={module.id}
-                      moduleData={module}
-                      onRemove={removeModule}
-                      onConnect={(destinationId) =>
-                        connectModules(module.id, destinationId)
-                      }
-                    />
+                    <Filter key={module.id} moduleData={module} />
                   </Tile>
                 )
-              case 'mixer':
-                return null
             }
           })}
         </div>

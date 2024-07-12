@@ -6,10 +6,11 @@ import {
   numericalDegreesStringToScaleArray,
 } from '../utils'
 import clsx from 'clsx'
-import { DeserializedModuleData, ModuleType, useWorkspace } from './Workspace'
+import { ModuleType, useWorkspace } from './Workspace'
 import { DestinationSelect } from './DestinationSelect'
 import { Button } from './Button'
 import { ALPHA_NAMES, OCTAVES, SCALES } from '../constants'
+import { ModuleNode, useAudioNodes } from '../AudioNodeContext'
 
 interface Note {
   id: string
@@ -24,10 +25,10 @@ export function Sequencer() {
   const [scale, setScale] = useState<number[]>([])
   const sequence = useRef<ReturnType<typeof makeGrid> | null>(null)
   const { modules } = useWorkspace()
-  const [destinationModule, setDestinationModule] =
-    useState<DeserializedModuleData<ModuleType> | null>(null)
-  const [gateModule, setGateModule] =
-    useState<DeserializedModuleData<ModuleType> | null>(null)
+  const [destinationNode, setDestinationNode] =
+    useState<ModuleNode<ModuleType> | null>(null)
+  const [gateNode, setGateNode] = useState<ModuleNode<ModuleType> | null>(null)
+  const { getNode } = useAudioNodes()
   const [isPlaying, setIsPlaying] = useState(false)
   const [playingIndex, setPLayingIndex] = useState(0)
   const [, setActiveNote] = useState<Note | null>(null)
@@ -52,11 +53,11 @@ export function Sequencer() {
   }
 
   const handleDestinationChange = (id: string) => {
-    setDestinationModule(modules.find((module) => module.id === id) ?? null)
+    setDestinationNode(getNode(id) ?? null)
   }
 
   const handleGateChange = (id: string) => {
-    setGateModule(modules.find((module) => module.id === id) ?? null)
+    setGateNode(getNode(id) ?? null)
   }
 
   const playSequence = () => {
@@ -95,7 +96,7 @@ export function Sequencer() {
   }, [baseNote, octave, scale])
 
   useEffect(() => {
-    if (!transportRef.current || !destinationModule || !gateModule) {
+    if (!transportRef.current || !destinationNode || !gateNode) {
       return
     }
 
@@ -105,12 +106,12 @@ export function Sequencer() {
       }
       sequence.current.forEach((row) => {
         const note = row.value[beat]
-        if (destinationModule.type === 'oscillator' && note.isActive) {
-          destinationModule.node.frequency.rampTo(note.note, 0, time)
+        if (destinationNode.type === 'oscillator' && note.isActive) {
+          destinationNode.data.frequency.rampTo(note.note, 0, time)
         }
 
-        if (gateModule.type === 'envelope' && note.isActive) {
-          gateModule.node.triggerAttackRelease(0.5)
+        if (gateNode.type === 'envelope' && note.isActive) {
+          gateNode.data.triggerAttackRelease(0.5)
         }
       })
     }
@@ -127,7 +128,7 @@ export function Sequencer() {
       transportRef.current.scheduleRepeat(onRepeat, '8n')
       isRepeatScheduled.current = true
     }
-  }, [destinationModule, gateModule])
+  }, [destinationNode, gateNode])
 
   return (
     <div

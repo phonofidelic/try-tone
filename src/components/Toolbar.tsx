@@ -1,18 +1,17 @@
-import * as Tone from 'tone'
-import { DeserializedModuleData, ModuleData, ModuleType } from './Workspace'
+import { ModuleData, ModuleType, useWorkspace } from './Workspace'
 import { Button } from './Button'
 
 export function Toolbar({
   modules,
-  clickOrigin,
-  addModule,
+  // addModule,
   onSelect,
 }: {
-  modules: ModuleData[]
-  clickOrigin?: { x: number; y: number } | undefined
-  addModule: (data: DeserializedModuleData<ModuleType>) => void
+  modules: ModuleData<ModuleType>[]
+  // addModule: (data: ModuleData<ModuleType>) => void
   onSelect?: (event: React.MouseEvent) => void
 }) {
+  const { addModule } = useWorkspace()
+
   return (
     <>
       <Button
@@ -21,10 +20,12 @@ export function Toolbar({
             id: crypto.randomUUID(),
             type: 'oscillator',
             name: `Oscillator ${modules.filter((module) => module.type === 'oscillator').length + 1}`,
-            node: new Tone.Oscillator(440, 'sine'),
             sources: [],
             destinations: [],
-            position: clickOrigin ?? null,
+            settings: {
+              frequency: 440,
+              type: 'sine',
+            },
           })
           typeof onSelect === 'function' && onSelect(event)
         }}
@@ -37,10 +38,11 @@ export function Toolbar({
             id: crypto.randomUUID(),
             type: 'vca',
             name: `VCA ${modules.filter((module) => module.type === 'vca').length + 1}`,
-            node: new Tone.Volume(),
             sources: [],
             destinations: [],
-            position: clickOrigin ?? null,
+            settings: {
+              volume: 0,
+            },
           })
           typeof onSelect === 'function' && onSelect(event)
         }}
@@ -53,10 +55,14 @@ export function Toolbar({
             id: crypto.randomUUID(),
             type: 'envelope',
             name: `Envelope ${modules.filter((module) => module.type === 'envelope').length + 1}`,
-            node: new Tone.AmplitudeEnvelope(),
             sources: [],
             destinations: [],
-            position: clickOrigin ?? null,
+            settings: {
+              attack: 0.1,
+              decay: 0.2,
+              sustain: 1.0,
+              release: 0.8,
+            },
           })
           typeof onSelect === 'function' && onSelect(event)
         }}
@@ -69,10 +75,12 @@ export function Toolbar({
             id: crypto.randomUUID(),
             type: 'filter',
             name: `Filter ${modules.filter((module) => module.type === 'filter').length + 1}`,
-            node: new Tone.Filter(440, 'bandpass'),
             sources: [],
             destinations: [],
-            position: clickOrigin ?? null,
+            settings: {
+              type: 'lowpass',
+              frequency: 350,
+            },
           })
           typeof onSelect === 'function' && onSelect(event)
         }}
