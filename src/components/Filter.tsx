@@ -10,8 +10,8 @@ export default function Filter({
   moduleData: ModuleData<'filter'>
 }) {
   const { id } = moduleData
-  const [frequency, setFrequency] = useState(20)
-  const [frequencyType, setFrequencyType] = useState('bandpass')
+  const [frequency, setFrequency] = useState(moduleData.settings.frequency)
+  const [frequencyType, setFrequencyType] = useState(moduleData.settings.type)
   const [frequencyResponseCurve, setFrequencyResponseCurve] =
     useState<Float32Array | null>(null)
   const { modules, editModule, removeModule } = useWorkspace()
@@ -43,7 +43,6 @@ export default function Filter({
       settings: { ...moduleData.settings, type: value },
     })
     node.type = value
-    // frequencyResponseCurve.current = node.getFrequencyResponse()
     setFrequencyResponseCurve(node.getFrequencyResponse())
   }
 
