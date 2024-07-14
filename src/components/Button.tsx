@@ -12,8 +12,8 @@ export function Button({
   return (
     <button
       className={clsx(
-        className,
         'text-nowrap bg-white dark:bg-zinc-800 border border-zinc-200',
+        className,
       )}
       onClick={onClick}
     >

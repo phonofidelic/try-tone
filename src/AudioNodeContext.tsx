@@ -51,11 +51,6 @@ export function AudioNodeContextProvider({
       | ModuleNode<T>
       | undefined
 
-    // if (!foundNode) {
-    //   setIsReady(false)
-    //   // throw new Error(`No AudioNode found for id "${nodeId}"`)
-    // }
-
     return foundNode
   }
 

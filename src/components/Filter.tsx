@@ -88,7 +88,7 @@ export default function Filter({
       </div>
       <DestinationSelect
         destinations={modules.filter((module) => module.id !== id)}
-        initialValue={'not_set'}
+        initialValue={moduleData.destinations[0] ?? 'not_set'}
         onChange={onConnect}
       />
     </div>

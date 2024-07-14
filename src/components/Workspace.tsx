@@ -11,17 +11,30 @@ import { Envelope } from './Envelope'
 import ContextMenu from './ContextMenu'
 import Filter from './Filter'
 import { Button } from './Button'
-import { clamp, translateCoordinates } from '../utils'
-import { Sequencer } from './Sequencer'
+import { clamp, makeGrid, translateCoordinates } from '../utils'
+import { SequencerPanel } from './Sequencer'
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const db = new Dexie('ModuleDatabase') as Dexie & {
   modules: EntityTable<ModuleData<ModuleType>, 'id'>
+  sequencers: EntityTable<SequencerData, 'id'>
 }
 db.version(1).stores({
   modules: '++id',
+  sequencers: '++id, created',
 })
 
+export type SequencerData = {
+  id: string
+  name: string
+  sequence: ReturnType<typeof makeGrid> | null
+  pitchNodeId: string
+  gateNodeId: string
+  baseNote: string
+  octave: string
+  scale: number[] | null
+  created: number
+}
 export type ModuleType = 'oscillator' | 'vca' | 'envelope' | 'filter'
 
 export type ModuleData<T> = {
@@ -71,6 +84,10 @@ type WorkspaceContextValue = {
   ): void
   removeModule: (moduleId: string) => void
   removeAllModules: () => void
+  sequencers: SequencerData[]
+  addSequencer: (newSequencer: SequencerData) => void
+  editSequencer: (sequencerId: string, update: Partial<SequencerData>) => void
+  removeSequencer: (sequencerId: string) => void
 }
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)
@@ -105,6 +122,27 @@ export function WorkspaceContextProvider({
     await db.modules.clear()
   }
 
+  const addSequencer = async (newSequencer: SequencerData) => {
+    await db.sequencers.add(newSequencer)
+  }
+
+  const editSequencer = async (
+    sequencerId: string,
+    update: Partial<SequencerData>,
+  ) => {
+    await db.sequencers.update(sequencerId, { ...update })
+  }
+
+  const removeSequencer = async (sequencerId: string) => {
+    await db.sequencers.delete(sequencerId)
+  }
+
+  const sequencers = useLiveQuery<SequencerData[], []>(
+    () => db.sequencers.orderBy('created').toArray(),
+    [],
+    [],
+  )
+
   if (!modules) {
     return null
   }
@@ -117,6 +155,10 @@ export function WorkspaceContextProvider({
         editModule,
         removeModule,
         removeAllModules,
+        sequencers,
+        addSequencer,
+        editSequencer,
+        removeSequencer,
       }}
     >
       {children}
@@ -138,8 +180,7 @@ export function useWorkspace() {
 }
 
 export function Workspace() {
-  const modules = useLiveQuery(() => db.modules.toArray()) ?? []
-  const { removeAllModules } = useWorkspace()
+  const { modules, removeAllModules } = useWorkspace()
 
   const defaultOriginCoordinates = {
     x: window.innerWidth / 2,
@@ -346,7 +387,7 @@ export function Workspace() {
         </div>
       </div>
       <div className="fixed left-0 bottom-0 z-10 w-full p-2">
-        <Sequencer />
+        <SequencerPanel />
       </div>
       {/* <CursorDebug scale={scale} offset={screenOffset} /> */}
     </>
