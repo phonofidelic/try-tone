@@ -70,6 +70,7 @@ export function SequencerPanel() {
 
             addSequencer(newSequencer)
             setSelectedSequencer(newSequencer)
+            setIsExpanded(true)
           }}
         >
           + Add Sequencer
