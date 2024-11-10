@@ -2,18 +2,17 @@ export const OCTAVES = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
 
 /* https://musiclaboratory.net/5-music-scales */
 export const SCALES = [
-  ['Standard major', '1-3-5-6-8-10-12'],
-  ['Pentatonic major', '1-3-5-8-10'],
-  ['Blues major', '1-4-6-7-8-10'],
-  ['Standard minor scale', '1-3-4-6-8-9-11'],
-  ['Melodic minor scale', '1-3-4-6-8-10-12'],
-  ['Harmonic minor', '1-3-4-6-8-9-12'],
-  ['Pentatonic minor', '1-4-6-8-11'],
-  ['Blues minor', '1-4-6-7-8-11'],
+  'Standard major.1-3-5-6-8-10-12-13',
+  'Pentatonic major.1-3-5-8-10',
+  'Blues major.1-4-6-7-8-10',
+  'Standard minor.1-3-4-6-8-9-11',
+  'Melodic minor.1-3-4-6-8-10-12-13',
+  'Harmonic minor.1-3-4-6-8-9-12-13',
+  'Pentatonic minor.1-4-6-8-11',
+  'Blues minor.1-4-6-7-8-11',
 ]
 
 /* https://www.guitarland.com/MusicTheoryWithToneJS/PlayMajorScale.html */
-export const MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11, 12]
 export const ALPHA_NAMES = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
 export const MIDI_NUM_NAMES = [
   'C_1',

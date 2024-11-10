@@ -21,7 +21,7 @@ export function CloseIcon({
   )
 }
 
-export default function EditIcon({
+export function EditIcon({
   size,
   className,
 }: {

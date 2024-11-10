@@ -30,9 +30,9 @@ export type SequencerData = {
   sequence: ReturnType<typeof makeGrid> | null
   pitchNodeId: string
   gateNodeId: string
-  baseNote: string
-  octave: string
-  scale: number[] | null
+  baseNote: string | null
+  octave: string | null
+  scale: string | null
   created: number
 }
 export type ModuleType = 'oscillator' | 'vca' | 'envelope' | 'filter'

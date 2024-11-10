@@ -11,92 +11,116 @@ import { DestinationSelect } from './DestinationSelect'
 import { Button } from './Button'
 import { ALPHA_NAMES, OCTAVES, SCALES } from '../constants'
 import { ModuleNode, useAudioNodes } from '../AudioNodeContext'
-import EditIcon, { CloseIcon } from './Icons'
+import { EditIcon, CloseIcon } from './Icons'
+import { useTransport } from '../App'
+
+const BPM = 60
 
 interface Note {
   id: string
+  beatIndex: number
   note: string
   isActive: boolean
 }
 
 export function SequencerPanel() {
-  const { sequencers, addSequencer, editSequencer, removeSequencer } =
-    useWorkspace()
+  const { sequencers, addSequencer } = useWorkspace()
   const [isExpanded, setIsExpanded] = useState(false)
   const [selectedSequencer, setSelectedSequencer] =
-    useState<SequencerData | null>(null)
-
-  useEffect(() => {
-    setSelectedSequencer(sequencers[sequencers.length - 1])
-  }, [sequencers])
+    useState<SequencerData | null>(sequencers[0] ?? null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [playingIndex, setPlayingIndex] = useState(0)
 
   return (
     <div
       className={clsx(
         'relative flex flex-col md:flex-row w-full space-x-2 bg-white dark:bg-zinc-800 p-2 border border-zinc-200 rounded transition-all',
         {
-          'h-[45vh]': isExpanded,
+          'h-fit': isExpanded,
           'h-0 ': !isExpanded,
         },
       )}
     >
       <div className="absolute left-0 -top-[50px] flex space-x-2">
         {sequencers.map((sequencer) => (
-          <SequencerButtonGroup
+          <SequencerTabButton
             key={sequencer.id}
             sequencer={sequencer}
             selectedSequencer={selectedSequencer}
-            setSelectedSequencer={setSelectedSequencer}
+            setSelectedSequencer={(sequencer: SequencerData) => {
+              setSelectedSequencer(sequencer)
+            }}
             setIsExpanded={setIsExpanded}
-            editSequencer={editSequencer}
-            removeSequencer={removeSequencer}
           />
         ))}
         <Button
           onClick={() => {
-            const id = crypto.randomUUID()
-            addSequencer({
-              id,
+            const newSequencer = {
+              id: crypto.randomUUID(),
               name: `Sequencer ${sequencers.length + 1}`,
-              baseNote: 'not_set',
-              octave: 'not_set',
               pitchNodeId: 'not_set',
               gateNodeId: 'not_set',
-              scale: [],
+              baseNote: null,
+              octave: null,
+              scale: null,
               sequence: null,
               created: Date.now(),
-            })
+            }
+
+            addSequencer(newSequencer)
+            setSelectedSequencer(newSequencer)
           }}
         >
-          Add Sequencer
+          + Add Sequencer
         </Button>
       </div>
       <div
-        className={clsx('flex w-full space-y-2 p-2 transition-all', {
+        className={clsx('flex w-full gap-y-2 p-2 transition-all', {
           'opacity-100': isExpanded,
           'opacity-0': !isExpanded,
         })}
       >
-        {selectedSequencer && (
-          <Sequencer key={selectedSequencer.id} {...selectedSequencer} />
-        )}
+        {sequencers.map((sequencer) => (
+          <div
+            key={sequencer.id}
+            className={clsx('flex', {
+              hidden: sequencer.id !== selectedSequencer?.id,
+            })}
+          >
+            <Sequencer
+              sequencerData={sequencer}
+              isPlaying={isPlaying}
+              setIsPlaying={setIsPlaying}
+              playingIndex={playingIndex}
+              setPlayingIndex={setPlayingIndex}
+              // transort={transport}
+            />
+          </div>
+        ))}
       </div>
     </div>
   )
 }
 
 export function Sequencer({
-  id,
-  baseNote,
-  octave,
-  scale,
-  sequence,
-  pitchNodeId,
-  gateNodeId,
-}: SequencerData) {
-  const sequenceRef = useRef<ReturnType<typeof makeGrid> | null>(sequence)
+  sequencerData,
+  isPlaying,
+  setIsPlaying,
+  playingIndex,
+  setPlayingIndex,
+}: {
+  sequencerData: SequencerData
+  isPlaying: boolean
+  setIsPlaying: (state: boolean) => void
+  playingIndex: number
+  setPlayingIndex: (index: number) => void
+}) {
+  const sequencerRef = useRef<SequencerData>(sequencerData)
+  const { id, baseNote, octave, scale, pitchNodeId, gateNodeId } =
+    sequencerRef.current
   const { modules, editSequencer } = useWorkspace()
   const { getNode } = useAudioNodes()
+  const transport = useTransport()
 
   const [destinationNode, setDestinationNode] = useState<
     ModuleNode<ModuleType> | undefined
@@ -105,29 +129,31 @@ export function Sequencer({
     getNode(gateNodeId),
   )
 
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [playingIndex, setPLayingIndex] = useState(0)
-  const [, setActiveNote] = useState<Note | null>(null)
-  const transportRef = useRef(Tone.getTransport())
-  const isRepeatScheduled = useRef(false)
+  const beatRef = useRef(0)
+  const repeatRef = useRef<number | null>(null)
 
-  const handleClick = (clickedNote: Note) => {
-    if (!sequenceRef.current) {
+  const toggleNote = (clickedNote: Note) => {
+    if (!sequencerRef.current.sequence) {
       return
     }
 
-    sequenceRef.current = sequenceRef.current.map((row) => ({
-      ...row,
-      value: row.value.map((note) => {
-        if (note.id === clickedNote.id) {
-          setActiveNote({ ...note, isActive: !note.isActive })
-          return { ...note, isActive: !note.isActive }
-        }
-        return note
-      }),
-    }))
-
-    editSequencer(id, { sequence: sequenceRef.current })
+    const updatedSequencer = {
+      ...sequencerRef.current,
+      sequence: sequencerRef.current.sequence.map((row) => ({
+        ...row,
+        value: row.value.map((noteCell) => {
+          if (noteCell.id === clickedNote.id) {
+            return { ...noteCell, isActive: !noteCell.isActive }
+          }
+          if (noteCell.beatIndex === clickedNote.beatIndex) {
+            return { ...noteCell, isActive: false }
+          }
+          return noteCell
+        }),
+      })),
+    }
+    sequencerRef.current = updatedSequencer
+    editSequencer(id, updatedSequencer)
   }
 
   const handleDestinationChange = (pitchNodeId: string) => {
@@ -141,74 +167,154 @@ export function Sequencer({
   }
 
   const playSequence = () => {
-    if (!transportRef.current) {
-      return
-    }
-
-    transportRef.current.start()
+    transport.start()
     setIsPlaying(true)
   }
 
   const stopSequence = () => {
-    if (!transportRef.current) {
-      return
-    }
-
-    transportRef.current.stop()
+    transport.pause()
     setIsPlaying(false)
   }
 
-  const onSelectScale = (numericalDegreesString: string) => {
-    if (numericalDegreesString === 'not_set') {
+  const onBaseNoteChange = (baseNote: string) => {
+    console.log(
+      `onBaseNoteChange, \nscale: ${scale} \nbaseNote: ${baseNote} \noctave: ${octave}`,
+    )
+    if (baseNote === 'not_set') {
+      editSequencer(id, { baseNote: null })
+      sequencerRef.current = {
+        ...sequencerRef.current,
+        baseNote: null,
+      }
       return
     }
-    const scaleArray = numericalDegreesStringToScaleArray(
-      numericalDegreesString,
+    if (!scale || !octave) {
+      editSequencer(id, { baseNote })
+      sequencerRef.current = {
+        ...sequencerRef.current,
+        baseNote,
+      }
+      return
+    }
+    const sequence = makeGrid(
+      makeScale(getScaleArray(scale), `${baseNote}${octave}`),
     )
-    editSequencer(id, { scale: scaleArray })
+    sequencerRef.current = {
+      ...sequencerRef.current,
+      baseNote,
+      sequence,
+    }
+    editSequencer(id, { baseNote, sequence })
+  }
+
+  const onOctaveChange = (octave: string) => {
+    console.log(
+      `onOctaveChange, \nscale: ${scale} \nbaseNote: ${baseNote} \noctave: ${octave}`,
+    )
+    if (octave === 'not_set') {
+      sequencerRef.current = {
+        ...sequencerRef.current,
+        octave: null,
+      }
+      editSequencer(id, { octave: null })
+      return
+    }
+    if (!scale || !baseNote) {
+      sequencerRef.current = {
+        ...sequencerRef.current,
+        octave,
+      }
+      editSequencer(id, { octave })
+      return
+    }
+    const sequence = makeGrid(
+      makeScale(getScaleArray(scale), `${baseNote}${octave}`),
+    )
+    sequencerRef.current = {
+      ...sequencerRef.current,
+      octave,
+      sequence,
+    }
+    editSequencer(id, { octave, sequence })
+  }
+
+  const onScaleChange = (scale: string) => {
+    console.log(
+      `onScaleChange, \nscale: ${scale} \nbaseNote: ${baseNote} \noctave: ${octave}`,
+    )
+    if (scale === 'not_set') {
+      sequencerRef.current = {
+        ...sequencerRef.current,
+        scale: null,
+      }
+      editSequencer(id, { scale: null })
+      return
+    }
+    if (!baseNote || !octave) {
+      sequencerRef.current = {
+        ...sequencerRef.current,
+        scale,
+      }
+      editSequencer(id, { scale })
+      return
+    }
+    const sequence = makeGrid(
+      makeScale(getScaleArray(scale), `${baseNote}${octave}`),
+    )
+    sequencerRef.current = {
+      ...sequencerRef.current,
+      scale,
+      sequence,
+    }
+    editSequencer(id, { scale, sequence })
   }
 
   useEffect(() => {
-    if (octave === 'not_set' || baseNote === 'not_set' || !scale) {
-      return
-    }
-    sequenceRef.current = makeGrid(makeScale(scale, `${baseNote}${octave}`))
-  }, [baseNote, octave, scale])
-
-  useEffect(() => {
-    if (!transportRef.current || !destinationNode || !gateNode) {
+    if (!destinationNode || !gateNode || repeatRef.current) {
       return
     }
 
     const onPlayNote = (time: Tone.Unit.Time) => {
-      if (!sequenceRef.current) {
+      if (!sequencerRef.current.sequence) {
         return
       }
-      sequenceRef.current.forEach((row) => {
-        const note = row.value[beat]
+      sequencerRef.current.sequence.forEach((row) => {
+        const note = row.value[beatRef.current]
         if (destinationNode.type === 'oscillator' && note.isActive) {
           destinationNode.data.frequency.rampTo(note.note, 0, time)
         }
 
         if (gateNode.type === 'envelope' && note.isActive) {
-          gateNode.data.triggerAttackRelease(0.5)
+          gateNode.data.triggerAttackRelease('8n')
         }
       })
     }
 
-    let beat = 0
     const onRepeat = (time: Tone.Unit.Time) => {
       onPlayNote(time)
-      beat = (beat + 1) % 8
-      setPLayingIndex(beat)
+      setPlayingIndex(beatRef.current)
+      beatRef.current = (beatRef.current + 1) % 8
     }
 
-    transportRef.current.bpm.value = 120
-    if (!isRepeatScheduled.current) {
-      transportRef.current.scheduleRepeat(onRepeat, '8n')
-      isRepeatScheduled.current = true
+    transport.bpm.value = BPM
+    if (repeatRef.current === null) {
+      repeatRef.current = transport.scheduleRepeat(onRepeat, '8n')
     }
-  }, [destinationNode, gateNode])
+
+    return () => {
+      if (repeatRef.current) {
+        transport.clear(repeatRef.current)
+        repeatRef.current = null
+      }
+    }
+  }, [
+    beatRef,
+    destinationNode,
+    gateNode,
+    repeatRef,
+    setPlayingIndex,
+    transport,
+  ])
 
   return (
     <>
@@ -239,9 +345,8 @@ export function Sequencer({
           <div className="text-xs">Base Note</div>
           <select
             className="w-full"
-            onChange={(event) =>
-              editSequencer(id, { baseNote: event.target.value })
-            }
+            defaultValue={baseNote ?? undefined}
+            onChange={(event) => onBaseNoteChange(event.target.value)}
           >
             <option value="not_set">Select base note</option>
             {ALPHA_NAMES.map((note) => (
@@ -255,10 +360,8 @@ export function Sequencer({
           <div className="text-xs">Octave</div>
           <select
             className="w-full"
-            defaultValue={octave}
-            onChange={(event) =>
-              editSequencer(id, { octave: event.target.value })
-            }
+            defaultValue={octave ?? undefined}
+            onChange={(event) => onOctaveChange(event.target.value)}
           >
             <option value={'not_set'}>Select octave</option>
             {OCTAVES.map((octave) => (
@@ -272,12 +375,13 @@ export function Sequencer({
           <div className="text-xs">Scale</div>
           <select
             className="w-full"
-            onChange={(event) => onSelectScale(event.target.value)}
+            defaultValue={scale ?? undefined}
+            onChange={(event) => onScaleChange(event.target.value)}
           >
             <option value={'not_set'}>Select a scale</option>
             {SCALES.map((scale) => (
-              <option key={scale[0]} value={scale[1]}>
-                {scale[0]}
+              <option key={scale} value={scale}>
+                {scale.split('.')[0]}
               </option>
             ))}
           </select>
@@ -290,26 +394,26 @@ export function Sequencer({
       </div>
 
       <div className="flex flex-col w-full overflow-y-auto">
-        {!sequenceRef.current ? (
+        {!sequencerRef.current.sequence ? (
           <div className="size-full flex flex-col justify-center place-self-stretch text-center self-stretch">
             <div>Select a scale for the sequence</div>
           </div>
         ) : (
-          sequenceRef.current.map((row) => (
+          sequencerRef.current.sequence.map((row) => (
             <div
               key={row.id}
               className="grid grid-flow-col auto-cols-fr w-full"
             >
-              {row.value.map((item, index) => (
+              {row.value.map((column, index) => (
                 <button
-                  key={item.id}
+                  key={column.id}
                   className={clsx('m-1 p-1 rounded border-2', {
-                    'bg-green-500/75': item.isActive,
+                    'bg-green-500/75': column.isActive,
                     'border-green-500': index === playingIndex,
                   })}
-                  onClick={() => handleClick(item)}
+                  onClick={() => toggleNote(column)}
                 >
-                  {item.note}
+                  {column.note}
                 </button>
               ))}
             </div>
@@ -320,21 +424,18 @@ export function Sequencer({
   )
 }
 
-function SequencerButtonGroup({
+function SequencerTabButton({
   sequencer,
   selectedSequencer,
   setSelectedSequencer,
   setIsExpanded,
-  editSequencer,
-  removeSequencer,
 }: {
   sequencer: SequencerData
   selectedSequencer: SequencerData | null
   setSelectedSequencer(sequencer: SequencerData): void
   setIsExpanded: React.Dispatch<React.SetStateAction<boolean>>
-  editSequencer(id: string, update: Partial<SequencerData>): void
-  removeSequencer(id: string): void
 }) {
+  const { editSequencer, removeSequencer } = useWorkspace()
   const [isEditing, setIsEditing] = useState(false)
   return (
     <div className="relative group">
@@ -351,7 +452,7 @@ function SequencerButtonGroup({
           }
         }}
         className={clsx({
-          'bg-zinc-200':
+          'bg-zinc-200 underline dark:bg-zinc-900':
             selectedSequencer && selectedSequencer.id === sequencer.id,
         })}
       >
@@ -371,7 +472,7 @@ function SequencerButtonGroup({
           >
             <input
               type="text"
-              defaultValue={sequencer.name}
+              defaultValue={sequencer.name ?? undefined}
               autoFocus
               name="sequencer-name"
               onBlur={(event) => {
@@ -403,4 +504,14 @@ function SequencerButtonGroup({
       </div>
     </div>
   )
+}
+
+const getScaleArray = (scaleString: string) => {
+  const [, numericalDegreesString] = scaleString.split('.')
+  if (!numericalDegreesString) {
+    throw new Error(
+      `getScaleArray received an invalid scale string: ${scaleString}`,
+    )
+  }
+  return numericalDegreesStringToScaleArray(numericalDegreesString)
 }
