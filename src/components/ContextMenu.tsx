@@ -8,7 +8,7 @@ export default function ContextMenu({
   onDismiss,
 }: {
   open: boolean
-  clickOrigin: { x: number; y: number } | undefined
+  clickOrigin?: { x: number; y: number } | undefined
   children: React.ReactNode
   onDismiss: () => void
 }) {
@@ -41,14 +41,18 @@ export default function ContextMenu({
           }
         }}
       />
-      {open && clickOrigin && (
+      {open && (
         <div
-          className="fixed opacity-100 z-10"
-          style={{
-            left: clickOrigin.x,
-            top: clickOrigin.y,
-            translate: `-${menuRect?.width ?? 0}px`,
-          }}
+          className="absolute opacity-100 z-10"
+          style={
+            clickOrigin
+              ? {
+                  left: clickOrigin.x,
+                  top: clickOrigin.y,
+                  translate: `-${menuRect?.width ?? 0}px`,
+                }
+              : { top: 0, left: 0 }
+          }
           ref={menuRef}
         >
           {children}

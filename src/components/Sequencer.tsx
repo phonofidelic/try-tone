@@ -14,7 +14,7 @@ import { ModuleNode, useAudioNodes } from '../AudioNodeContext'
 import { EditIcon, CloseIcon } from './Icons'
 import { useTransport } from '../App'
 
-const BPM = 60
+const DEFAULT_BPM = 60
 
 interface Note {
   id: string
@@ -30,11 +30,12 @@ export function SequencerPanel() {
     useState<SequencerData | null>(sequencers[0] ?? null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [playingIndex, setPlayingIndex] = useState(0)
+  const [bpm, setBpm] = useState(DEFAULT_BPM)
 
   return (
     <div
       className={clsx(
-        'relative flex flex-col md:flex-row w-full space-x-2 bg-white dark:bg-zinc-800 p-2 border border-zinc-200 rounded transition-all',
+        'relative flex flex-col md:flex-row w-full gap-x-2 bg-white dark:bg-zinc-800 p-2 border border-zinc-200 rounded transition-all',
         {
           'h-fit': isExpanded,
           'h-0 ': !isExpanded,
@@ -83,17 +84,18 @@ export function SequencerPanel() {
         {sequencers.map((sequencer) => (
           <div
             key={sequencer.id}
-            className={clsx('flex', {
+            className={clsx('flex w-full gap-x-2', {
               hidden: sequencer.id !== selectedSequencer?.id,
             })}
           >
             <Sequencer
               sequencerData={sequencer}
+              bpm={bpm}
               isPlaying={isPlaying}
               setIsPlaying={setIsPlaying}
               playingIndex={playingIndex}
               setPlayingIndex={setPlayingIndex}
-              // transort={transport}
+              onBpmChange={(value) => setBpm(value)}
             />
           </div>
         ))}
@@ -104,16 +106,20 @@ export function SequencerPanel() {
 
 export function Sequencer({
   sequencerData,
+  bpm,
   isPlaying,
   setIsPlaying,
   playingIndex,
   setPlayingIndex,
+  onBpmChange,
 }: {
   sequencerData: SequencerData
+  bpm: number
   isPlaying: boolean
   setIsPlaying: (state: boolean) => void
   playingIndex: number
   setPlayingIndex: (index: number) => void
+  onBpmChange: (bpm: number) => void
 }) {
   const sequencerRef = useRef<SequencerData>(sequencerData)
   const { id, baseNote, octave, scale, pitchNodeId, gateNodeId } =
@@ -296,7 +302,7 @@ export function Sequencer({
       beatRef.current = (beatRef.current + 1) % 8
     }
 
-    transport.bpm.value = BPM
+    transport.bpm.value = bpm
     if (repeatRef.current === null) {
       repeatRef.current = transport.scheduleRepeat(onRepeat, '8n')
     }
@@ -314,11 +320,12 @@ export function Sequencer({
     repeatRef,
     setPlayingIndex,
     transport,
+    bpm,
   ])
 
   return (
     <>
-      <div className="flex flex-col space-y-2 mt-auto overflow-y-auto">
+      <div className="flex flex-col gap-y-2 mt-auto overflow-y-auto w-fit">
         <label className="">
           <div className="text-xs">V/Oct out</div>
           <DestinationSelect
@@ -386,11 +393,20 @@ export function Sequencer({
             ))}
           </select>
         </label>
-        <div>
-          <Button onClick={isPlaying ? stopSequence : playSequence}>
-            {isPlaying ? 'STOP' : 'START'}
-          </Button>
-        </div>
+        <label>
+          <div className="text-xs">BPM: {bpm}</div>
+          <input
+            type="range"
+            min={10}
+            max={200}
+            step={1}
+            value={bpm}
+            onChange={(event) => onBpmChange(Number(event.target.value))}
+          />
+        </label>
+        <Button onClick={isPlaying ? stopSequence : playSequence}>
+          {isPlaying ? 'STOP' : 'START'}
+        </Button>
       </div>
 
       <div className="flex flex-col w-full overflow-y-auto">
