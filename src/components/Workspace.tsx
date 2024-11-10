@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import * as Tone from 'tone'
+import { Dexie, type EntityTable } from 'dexie'
+import { useLiveQuery } from 'dexie-react-hooks'
 import { Toolbar } from './Toolbar'
 import Tile from './Tile'
 import { Oscillator } from './Oscillator'
@@ -9,64 +11,83 @@ import { Envelope } from './Envelope'
 import ContextMenu from './ContextMenu'
 import Filter from './Filter'
 import { Button } from './Button'
-import { clamp, translateCoordinates } from '../utils'
+import { clamp, makeGrid, translateCoordinates } from '../utils'
+import { SequencerPanel } from './Sequencer'
 
-export type OscillatorData = {
-  id: string
-  name: string
-  node: Tone.Oscillator
+// eslint-disable-next-line react-refresh/only-export-components
+export const db = new Dexie('ModuleDatabase') as Dexie & {
+  modules: EntityTable<ModuleData<ModuleType>, 'id'>
+  sequencers: EntityTable<SequencerData, 'id'>
 }
-export type VcaData = {
-  id: string
-  name: string
-  node: Tone.Volume
-}
-export type EnvelopeData = {
-  id: string
-  name: string
-  node: Tone.Envelope
-}
+db.version(1).stores({
+  modules: '++id',
+  sequencers: '++id, created',
+})
 
-export type MixerData = {
+export type SequencerData = {
   id: string
   name: string
-  node: Tone.Merge
+  sequence: ReturnType<typeof makeGrid> | null
+  pitchNodeId: string
+  gateNodeId: string
+  baseNote: string | null
+  octave: string | null
+  scale: string | null
+  created: number
 }
+export type ModuleType = 'oscillator' | 'vca' | 'envelope' | 'filter'
 
-export type ModuleData = {
+export type ModuleData<T> = {
   id: string
   name: string
   sources: string[]
   destinations: string[]
+  type: T
 } & (
   | {
       type: 'oscillator'
-      node: Tone.Oscillator
+      settings: {
+        frequency: number
+        type: Tone.ToneOscillatorType
+      }
     }
   | {
       type: 'vca'
-      node: Tone.Volume
+      settings: {
+        volume: number
+      }
     }
   | {
       type: 'envelope'
-      node: Tone.AmplitudeEnvelope
-    }
-  | {
-      type: 'mixer'
-      node: Tone.Merge
+      settings: {
+        attack: number
+        decay: number
+        sustain: number
+        release: number
+      }
     }
   | {
       type: 'filter'
-      node: Tone.Filter
+      settings: {
+        frequency: number
+        type: 'highpass' | 'bandpass' | 'lowpass'
+      }
     }
 )
 
 type WorkspaceContextValue = {
-  nodes: ModuleData[]
-  addNode: (newNode: ModuleData) => void
-  removeNode: (nodeId: string) => void
-  connectNodes: (source: string, destination: string) => void
-  removeAllNodes: () => void
+  modules: ModuleData<ModuleType>[]
+  addModule: (newModule: ModuleData<ModuleType>) => void
+  editModule<TModuleType>(
+    moduleId: string,
+    update: Partial<ModuleData<TModuleType>>,
+  ): void
+  removeModule: (moduleId: string) => void
+  removeAllModules: () => void
+  sequencers: SequencerData[]
+  addSequencer: (newSequencer: SequencerData) => void
+  editSequencer: (sequencerId: string, update: Partial<SequencerData>) => void
+  removeSequencer: (sequencerId: string) => void
 }
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)
@@ -76,137 +97,68 @@ export function WorkspaceContextProvider({
 }: {
   children: React.ReactNode
 }) {
-  const initialMixerData: ModuleData = {
-    id: crypto.randomUUID(),
-    type: 'mixer',
-    name: 'Mixer',
-    node: new Tone.Merge().toDestination(),
-    sources: [],
-    destinations: ['out'],
+  const modules = useLiveQuery<ModuleData<ModuleType>[], null>(
+    () => db.modules.toArray(),
+    [],
+    null,
+  )
+
+  const addModule = async (newModule: ModuleData<ModuleType>) => {
+    await db.modules.add(newModule)
   }
 
-  const [nodes, setNodes] = useState<ModuleData[]>([
-    {
-      id: crypto.randomUUID(),
-      type: 'oscillator',
-      name: 'Oscillator 1',
-      node: new Tone.Oscillator(440, 'sine').connect(initialMixerData.node),
-      sources: [],
-      destinations: [initialMixerData.id],
-    },
-    initialMixerData,
-  ])
-
-  const addNode = (newNode: ModuleData) => {
-    setNodes([...nodes, newNode])
+  async function editModule<TModuleType>(
+    moduleId: string,
+    update: Partial<ModuleData<TModuleType>>,
+  ) {
+    await db.modules.update(moduleId, { ...update })
   }
 
-  const removeNode = (nodeId: string) => {
-    const nodeToRemove = nodes.find((node) => node.id === nodeId)
-
-    if (!nodeToRemove) {
-      return
-    }
-
-    const mutatedNodeList = nodes
-      .map((node) => ({
-        ...node,
-        sources: node.sources.filter(
-          (sourceId) => sourceId !== nodeToRemove.id,
-        ),
-        destinations: nodes
-          .filter((node) => node.id !== nodeToRemove.id)
-          .map((node) => node.id),
-      }))
-      .filter((node) => node.id !== nodeToRemove.id)
-
-    setNodes(mutatedNodeList)
-    nodeToRemove.node.disconnect().dispose()
+  const removeModule = async (moduleId: string) => {
+    await db.modules.delete(moduleId)
   }
 
-  const connectNodes = (sourceId: string, destinationId: string) => {
-    const sourceNode = nodes.find((node) => node.id === sourceId)
-    if (!sourceNode) {
-      return
-    }
-
-    if (destinationId === 'not_set') {
-      setNodes(
-        nodes.map((node) =>
-          node.id === sourceNode.id
-            ? {
-                ...sourceNode,
-                destinations: ['not_set'],
-              }
-            : node,
-        ),
-      )
-
-      sourceNode.node.disconnect()
-      return
-    }
-
-    if (destinationId === 'out') {
-      setNodes(
-        nodes.map((node) =>
-          node.id === sourceNode.id
-            ? {
-                ...sourceNode,
-                destinations: ['out'],
-              }
-            : node,
-        ),
-      )
-
-      sourceNode.node.disconnect()
-      sourceNode.node.toDestination()
-      return
-    }
-
-    const destinationNode = nodes.find((node) => node.id === destinationId)
-    if (!destinationNode) {
-      return
-    }
-
-    setNodes(
-      nodes.map((node) => {
-        if (node.id === sourceNode.id) {
-          return {
-            ...sourceNode,
-            destinations: [destinationNode.id],
-          }
-        }
-
-        if (node.id === destinationNode.id) {
-          return {
-            ...destinationNode,
-            sources: [sourceNode.id],
-          }
-        }
-
-        return node
-      }),
-    )
-
-    sourceNode.node.disconnect()
-    sourceNode.node.connect(destinationNode.node)
+  const removeAllModules = async () => {
+    await db.modules.clear()
   }
 
-  const removeAllNodes = () => {
-    nodes.forEach((node) => {
-      node.node.disconnect().dispose()
-    })
-    setNodes([])
+  const addSequencer = async (newSequencer: SequencerData) => {
+    await db.sequencers.add(newSequencer)
+  }
+
+  const editSequencer = async (
+    sequencerId: string,
+    update: Partial<SequencerData>,
+  ) => {
+    await db.sequencers.update(sequencerId, { ...update })
+  }
+
+  const removeSequencer = async (sequencerId: string) => {
+    await db.sequencers.delete(sequencerId)
+  }
+
+  const sequencers = useLiveQuery<SequencerData[], []>(
+    () => db.sequencers.orderBy('created').toArray(),
+    [],
+    [],
+  )
+
+  if (!modules) {
+    return null
   }
 
   return (
     <WorkspaceContext.Provider
       value={{
-        nodes,
-        addNode,
-        removeNode,
-        connectNodes,
-        removeAllNodes,
+        modules,
+        addModule,
+        editModule,
+        removeModule,
+        removeAllModules,
+        sequencers,
+        addSequencer,
+        editSequencer,
+        removeSequencer,
       }}
     >
       {children}
@@ -228,8 +180,8 @@ export function useWorkspace() {
 }
 
 export function Workspace() {
-  const { nodes, addNode, removeNode, connectNodes, removeAllNodes } =
-    useWorkspace()
+  const { modules, removeAllModules } = useWorkspace()
+
   const defaultOriginCoordinates = {
     x: window.innerWidth / 2,
     y: window.innerHeight / 2,
@@ -298,8 +250,7 @@ export function Workspace() {
       >
         <div className="flex flex-col space-y-2 *:shadow">
           <Toolbar
-            nodes={nodes}
-            addNode={addNode}
+            modules={modules}
             onSelect={() => {
               setContextMenuOpen(false)
             }}
@@ -308,12 +259,12 @@ export function Workspace() {
       </ContextMenu>
       <div className="fixed top-0 flex w-screen p-2 z-10">
         <div className="flex space-x-2">
-          <Toolbar nodes={nodes} addNode={addNode} />
+          <Toolbar modules={modules} />
         </div>
         <div className="flex w-full space-x-2 justify-end">
           <Button
             onClick={() => {
-              removeAllNodes()
+              removeAllModules()
             }}
           >
             Clear Workspace
@@ -331,7 +282,7 @@ export function Workspace() {
       <div
         ref={workspaceDivRef}
         className={clsx(
-          'fixed flex flex-col w-screen h-screen top-0 left-0 select-none ',
+          'fixed flex flex-col w-screen h-screen top-0 left-0 select-none bg-zinc-100 dark:bg-zinc-900',
           {
             'cursor-grab': spaceIsPressed,
             'cursor-grabbing': isGrabbing,
@@ -369,101 +320,74 @@ export function Workspace() {
             transform: `scale(${1 / scale}) translate(${screenOffset.x}px, ${screenOffset.y}px)`,
           }}
         >
-          {nodes.map((node) => {
-            switch (node.type) {
+          {modules.map((module) => {
+            switch (module.type) {
               case 'oscillator':
                 return (
                   <Tile
-                    key={node.id}
+                    key={`tile_${module.id}`}
+                    id={`tile_${module.id}`}
                     initialPos={translateCoordinates(
                       defaultOriginCoordinates,
                       screenOffset,
                     )}
                     scale={scale}
+                    header={module.name}
                   >
-                    <Oscillator
-                      key={node.id}
-                      id={node.id}
-                      name={node.name}
-                      node={node.node}
-                      onRemove={removeNode}
-                      onConnect={(destinationId) =>
-                        connectNodes(node.id, destinationId)
-                      }
-                    />
+                    <Oscillator key={module.id} moduleData={module} />
                   </Tile>
                 )
               case 'vca':
                 return (
                   <Tile
-                    key={node.id}
+                    key={`tile_${module.id}`}
+                    id={`tile_${module.id}`}
                     initialPos={translateCoordinates(
                       defaultOriginCoordinates,
                       screenOffset,
                     )}
                     scale={scale}
+                    header={module.name}
                   >
-                    <Vca
-                      key={node.id}
-                      id={node.id}
-                      name={node.name}
-                      node={node.node}
-                      onRemove={removeNode}
-                      onConnect={(destinationId) =>
-                        connectNodes(node.id, destinationId)
-                      }
-                    />
+                    <Vca key={module.id} moduleData={module} />
                   </Tile>
                 )
               case 'envelope':
                 return (
                   <Tile
-                    key={node.id}
+                    key={`tile_${module.id}`}
+                    id={`tile_${module.id}`}
                     initialPos={translateCoordinates(
                       defaultOriginCoordinates,
                       screenOffset,
                     )}
                     scale={scale}
+                    header={module.name}
                   >
-                    <Envelope
-                      key={node.id}
-                      id={node.id}
-                      name={node.name}
-                      node={node.node}
-                      onRemove={removeNode}
-                      onConnect={(destinationId) =>
-                        connectNodes(node.id, destinationId)
-                      }
-                    />
+                    <Envelope key={module.id} moduleData={module} />
                   </Tile>
                 )
               case 'filter':
                 return (
                   <Tile
-                    key={node.id}
+                    key={`tile_${module.id}`}
+                    id={`tile_${module.id}`}
                     initialPos={translateCoordinates(
                       defaultOriginCoordinates,
                       screenOffset,
                     )}
                     scale={scale}
+                    header={module.name}
                   >
-                    <Filter
-                      key={node.id}
-                      id={node.id}
-                      name={node.name}
-                      node={node.node}
-                      onRemove={removeNode}
-                      onConnect={(destinationId) =>
-                        connectNodes(node.id, destinationId)
-                      }
-                    />
+                    <Filter key={module.id} moduleData={module} />
                   </Tile>
                 )
-              case 'mixer':
-                return null
             }
           })}
         </div>
+      </div>
+      <div className="fixed left-0 bottom-0 z-10 w-full p-2">
+        <SequencerPanel />
       </div>
       {/* <CursorDebug scale={scale} offset={screenOffset} /> */}
     </>

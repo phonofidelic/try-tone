@@ -2,15 +2,37 @@ import { useEffect, useRef, useState } from 'react'
 import { clsx } from 'clsx'
 
 export default function Tile({
+  id,
   initialPos,
   scale,
+  header,
   children,
 }: {
+  id: string
   initialPos: { x: number; y: number }
   scale: number
+  header: React.ReactNode
   children: React.ReactNode
 }) {
-  const [pos, setPos] = useState(initialPos)
+  const [pos, setPos] = useState(() => {
+    // read initial position from localStorage if found
+    const tilePositionsString = localStorage.getItem('tilePositions')
+    if (tilePositionsString) {
+      const tilePositions = JSON.parse(tilePositionsString) as {
+        [key: string]: { x: string; y: string }
+      }
+      const storedPosition = tilePositions[id]
+
+      if (storedPosition) {
+        return {
+          x: Number(storedPosition.x),
+          y: Number(storedPosition.y),
+        }
+      }
+    }
+    // else use initialPos
+    return initialPos
+  })
   const [offset, setOffset] = useState({ x: 0, y: 0 })
   const [isPressed, setIsPressed] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -30,6 +52,42 @@ export default function Tile({
     initialized.current = true
   }, [])
 
+  const onMouseUp = (event: React.MouseEvent) => {
+    // get current positions state
+    const currentPositionsString = localStorage.getItem('tilePositions')
+    if (currentPositionsString) {
+      const currentPositions = JSON.parse(currentPositionsString) as {
+        [key: string]: { x: string; y: string }
+      }
+
+      // write position to localStorage
+      localStorage.setItem(
+        'tilePositions',
+        JSON.stringify({
+          ...currentPositions,
+          [id]: {
+            x: event.clientX * scale - offset.x,
+            y: event.clientY * scale - offset.y,
+          },
+        }),
+      )
+    } else {
+      // write position to localStorage
+      localStorage.setItem(
+        'tilePositions',
+        JSON.stringify({
+          [id]: {
+            x: event.clientX * scale - offset.x,
+            y: event.clientY * scale - offset.y,
+          },
+        }),
+      )
+    }
+
+    setIsPressed(false)
+    setOffset({ x: 0, y: 0 })
+  }
+
   useEffect(() => {
     if (!containerRef.current) {
       return
@@ -45,25 +103,56 @@ export default function Tile({
         y: event.clientY * scale - offset.y,
       })
     }
-    const onMouseUp = () => {
-      setIsPressed(false)
-      setOffset({ x: 0, y: 0 })
-    }
+    // const onMouseUp = (event: MouseEvent) => {
+    //   // get current positions state
+    //   const currentPositionsString = localStorage.getItem('tilePositions')
+    //   if (currentPositionsString) {
+    //     const currentPositions = JSON.parse(currentPositionsString) as {
+    //       [key: string]: { x: string; y: string }
+    //     }
+
+    //     // write position to localStorage
+    //     localStorage.setItem(
+    //       'tilePositions',
+    //       JSON.stringify({
+    //         ...currentPositions,
+    //         [id]: {
+    //           x: event.clientX * scale,
+    //           y: event.clientY * scale,
+    //         },
+    //       }),
+    //     )
+    //   } else {
+    //     // write position to localStorage
+    //     localStorage.setItem(
+    //       'tilePositions',
+    //       JSON.stringify({
+    //         [id]: {
+    //           x: event.clientX * scale,
+    //           y: event.clientY * scale,
+    //         },
+    //       }),
+    //     )
+    //   }
+
+    //   setIsPressed(false)
+    //   setOffset({ x: 0, y: 0 })
+    // }
 
     document.addEventListener('mousemove', onMouseMove)
-    document.addEventListener('mouseup', onMouseUp)
+    // document.addEventListener('mouseup', onMouseUp)
 
     return () => {
       document.removeEventListener('mousemove', onMouseMove)
-      document.removeEventListener('mouseup', onMouseUp)
+      // document.removeEventListener('mouseup', onMouseUp)
     }
-  }, [isPressed, offset, scale])
+  }, [id, isPressed, offset, scale])
 
   return (
     <div
       ref={containerRef}
       className={clsx(
-        'absolute group cursor-pointer bg-white dark:bg-zinc-800 transition-opacity duration-500',
+        'absolute group cursor-pointer bg-white dark:bg-zinc-800 transition-opacity duration-500 rounded p-2',
         {
           'drop-shadow': !isPressed,
           'drop-shadow-lg': isPressed,
@@ -76,7 +165,7 @@ export default function Tile({
         top: pos.y,
       }}
     >
-      <div className="relative">
+      {/* <div className="relative">
         <div
           className="absolute w-full h-12 p-1 rounded"
           onMouseDown={(event) => {
@@ -89,9 +178,28 @@ export default function Tile({
               y: event.clientY * scale - containerRef.current.offsetTop,
             })
           }}
+          // onMouseUp={(event) =>
+          //   editModule(children.props.moduleData.id, { position: pos })
+          // }
         >
           <div className="size-full  group-hover:border-2 border-slate-300 dark:border-zinc-500 rounded  border-dashed"></div>
         </div>
+      </div> */}
+      <div
+        className="size-full  border-2 border-white hover:border-slate-300 hover:dark:border-zinc-500 rounded  border-dashed p-2"
+        onMouseDown={(event) => {
+          if (!containerRef.current) {
+            return
+          }
+          setIsPressed(true)
+          setOffset({
+            x: event.clientX * scale - containerRef.current.offsetLeft,
+            y: event.clientY * scale - containerRef.current.offsetTop,
+          })
+        }}
+        onMouseUp={onMouseUp}
+      >
+        <h2 className="text-2xl">{header}</h2>
       </div>
       {children}
     </div>

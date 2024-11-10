@@ -1,34 +1,38 @@
 import { useState } from 'react'
 import * as Tone from 'tone'
 import { DestinationSelect } from './DestinationSelect'
-import { useWorkspace } from './Workspace'
+import { ModuleData, useWorkspace } from './Workspace'
+import { useAudioNode } from '../AudioNodeContext'
 
 export function Oscillator({
-  id,
-  name,
-  node,
-  onRemove,
-  onConnect,
+  moduleData,
 }: {
-  id: string
-  name: string
-  node: Tone.Oscillator
-  onRemove: (id: string) => void
-  onConnect: (destinationId: string) => void
+  moduleData: ModuleData<'oscillator'>
 }) {
-  const [frequency, setFrequency] = useState(440)
+  const { id } = moduleData
+  const [frequency, setFrequency] = useState(moduleData.settings.frequency)
   const [displayState, setDisplayState] = useState<'started' | 'stopped'>(
     'stopped',
   )
+  const { modules, editModule, removeModule } = useWorkspace()
+  const { node, getNode } = useAudioNode<'oscillator'>(moduleData)
 
-  const { nodes } = useWorkspace()
+  if (!node) {
+    return null
+  }
 
-  const onFrequencyChange = (value: number) => {
+  const onFrequencyChange = async (value: number) => {
     setFrequency(value)
+    editModule<'oscillator'>(id, {
+      settings: { ...moduleData.settings, frequency: value },
+    })
     node.frequency.rampTo(Tone.Frequency(value).toFrequency(), 0)
   }
 
   const onTypeChange = (value: Tone.ToneOscillatorType) => {
+    editModule<'oscillator'>(id, {
+      settings: { ...moduleData.settings, type: value },
+    })
     node.type = value
   }
 
@@ -42,18 +46,37 @@ export function Oscillator({
     }
   }
 
+  const onConnect = (destinationId: string) => {
+    node.disconnect()
+    if (destinationId === 'out') {
+      node.toDestination()
+    } else {
+      const destinationNode = getNode(destinationId)
+      console.log('destinationNode:', destinationNode)
+      if (destinationNode) {
+        node.connect(destinationNode.data)
+      }
+    }
+    editModule(id, { destinations: [destinationId] })
+  }
+
   const handleRemove = (id: string) => {
     node.disconnect()
     node.dispose()
-    onRemove(id)
+    removeModule(id)
   }
 
   return (
-    <div className="flex space-y-2 flex-col border rounded p-2">
-      <h2 className="text-2xl">{name}</h2>
+    <div className="flex space-y-2 flex-col p-2">
       <FrequencyDisplay value={frequency} />
-      <FrequencyControl onChange={onFrequencyChange} />
-      <OscillatorTypeSelect onChange={onTypeChange} />
+      <FrequencyControl
+        value={moduleData.settings.frequency}
+        onChange={onFrequencyChange}
+      />
+      <OscillatorTypeSelect
+        initialValue={moduleData.settings.type}
+        onChange={onTypeChange}
+      />
       <div className="flex space-x-2 w-full">
         <button className="w-full" onClick={onTogglePlay}>
           {displayState === 'stopped' ? 'Start' : 'Stop'}
@@ -63,8 +86,8 @@ export function Oscillator({
         </button>
       </div>
       <DestinationSelect
-        destinations={nodes.filter((node) => node.id !== id)}
-        initialValue={'not_set'}
+        destinations={modules.filter((module) => module.id !== id)}
+        initialValue={moduleData.destinations[0] ?? 'not_set'}
         onChange={onConnect}
       />
     </div>
@@ -75,13 +98,20 @@ function FrequencyDisplay({ value }: { value: number }) {
   return <div>Frequency: {Math.round(value)} Hz</div>
 }
 
-function FrequencyControl({ onChange }: { onChange: (value: number) => void }) {
+function FrequencyControl({
+  value,
+  onChange,
+}: {
+  value: number
+  onChange: (value: number) => void
+}) {
   return (
     <input
       aria-label="frequency"
       type="range"
       min={20}
       max={20000}
+      value={value}
       onChange={(event) => {
         onChange(Tone.Frequency(event.target.value).toFrequency())
       }}
@@ -90,14 +120,17 @@ function FrequencyControl({ onChange }: { onChange: (value: number) => void }) {
 }
 
 function OscillatorTypeSelect({
+  initialValue,
   onChange,
 }: {
+  initialValue: Tone.ToneOscillatorType
   onChange: (value: Tone.ToneOscillatorType) => void
 }) {
   return (
     <select
       aria-label="shape"
       name="shape"
+      defaultValue={initialValue}
       onChange={(event) =>
         onChange(event.target.value as Tone.ToneOscillatorType)
       }

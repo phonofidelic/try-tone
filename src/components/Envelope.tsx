@@ -1,21 +1,20 @@
 import * as Tone from 'tone'
 import { DestinationSelect } from './DestinationSelect'
-import { useWorkspace } from './Workspace'
+import { ModuleData, useWorkspace } from './Workspace'
+import { useAudioNode } from '../AudioNodeContext'
 
 export function Envelope({
-  id,
-  name,
-  node,
-  onRemove,
-  onConnect,
+  moduleData,
 }: {
-  id: string
-  name: string
-  node: Tone.Envelope
-  onRemove: (id: string) => void
-  onConnect: (destinationId: string) => void
+  moduleData: ModuleData<'envelope'>
 }) {
-  const { nodes } = useWorkspace()
+  const { id } = moduleData
+  const { modules, editModule, removeModule } = useWorkspace()
+  const { node, getNode } = useAudioNode<'envelope'>(moduleData)
+
+  if (!node) {
+    return null
+  }
 
   const onParameterChange = (
     parameter: 'attack' | 'decay' | 'sustain' | 'release',
@@ -23,15 +22,27 @@ export function Envelope({
   ) => {
     switch (parameter) {
       case 'attack':
+        editModule<'envelope'>(id, {
+          settings: { ...moduleData.settings, attack: value },
+        })
         node.attack = value
         break
       case 'decay':
+        editModule<'envelope'>(id, {
+          settings: { ...moduleData.settings, decay: value },
+        })
         node.decay = value
         break
       case 'sustain':
+        editModule<'envelope'>(id, {
+          settings: { ...moduleData.settings, sustain: value },
+        })
         node.sustain = value
         break
       case 'release':
+        editModule<'envelope'>(id, {
+          settings: { ...moduleData.settings, release: value },
+        })
         node.release = value
         break
       default:
@@ -39,21 +50,33 @@ export function Envelope({
     }
   }
 
-  const handleRemove = () => {
+  const onConnect = (destinationId: string) => {
+    node.disconnect()
+    if (destinationId === 'out') {
+      node.toDestination()
+    } else {
+      const destinationNode = getNode(destinationId)
+      if (destinationNode) {
+        node.connect(destinationNode.data)
+      }
+    }
+    editModule(id, { destinations: [destinationId] })
+  }
+
+  const handleRemove = (id: string) => {
     node.disconnect()
     node.dispose()
-    onRemove(id)
+    removeModule(id)
   }
 
   return (
-    <div className="flex flex-col space-y-2 border rounded p-2 w-full">
-      <h2 className="text-2xl">{name}</h2>
+    <div className="flex flex-col space-y-2 rounded p-2 w-full">
       <div className="flex flex-col w-fit mx-auto">
         <div className="flex w-full justify-between">
           A{' '}
           <RangeControl
             label="attack"
-            initialValue={node.attack}
+            initialValue={moduleData.settings.attack}
             range={[0, 2]}
             onChange={(value: number) => onParameterChange('attack', value)}
           />
@@ -62,7 +85,7 @@ export function Envelope({
           D{' '}
           <RangeControl
             label="decay"
-            initialValue={node.decay}
+            initialValue={moduleData.settings.decay}
             range={[0, 2]}
             onChange={(value: number) => onParameterChange('decay', value)}
           />
@@ -71,7 +94,7 @@ export function Envelope({
           S{' '}
           <RangeControl
             label="sustain"
-            initialValue={node.sustain}
+            initialValue={moduleData.settings.sustain}
             range={[0, 1]}
             onChange={(value: number) => onParameterChange('sustain', value)}
           />
@@ -80,7 +103,7 @@ export function Envelope({
           R{' '}
           <RangeControl
             label="release"
-            initialValue={node.release}
+            initialValue={moduleData.settings.release}
             range={[0, 2]}
             onChange={(value: number) => onParameterChange('release', value)}
           />
@@ -95,12 +118,13 @@ export function Envelope({
         >
           Trig
         </button>
-        <button className="w-full" onClick={handleRemove}>
+        <button className="w-full" onClick={() => handleRemove(id)}>
           Remove
         </button>
       </div>
       <DestinationSelect
-        destinations={nodes.filter((node) => node.id !== id)}
+        destinations={modules.filter((module) => module.id !== id)}
+        initialValue={moduleData.destinations[0] ?? 'not_set'}
         onChange={onConnect}
       />
     </div>
