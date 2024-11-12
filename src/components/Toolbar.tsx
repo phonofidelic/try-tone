@@ -16,7 +16,7 @@ export function Toolbar({
   onCloseToolbarMenu: () => void
 }) {
   return (
-    <div className="fixed top-0 flex w-screen p-2 z-10">
+    <div className="fixed top-0 flex w-screen p-2 z-20">
       <div className="flex relative flex-col gap-2">
         <Button
           onClick={() => {
