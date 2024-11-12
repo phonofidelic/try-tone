@@ -333,70 +333,88 @@ export function Workspace() {
             transform: `scale(${1 / scale}) translate(${screenOffset.x}px, ${screenOffset.y}px)`,
           }}
         >
-          {modules.map((module) => {
-            switch (module.type) {
-              case 'oscillator':
-                return (
-                  <Tile
-                    key={`tile_${module.id}`}
-                    id={`tile_${module.id}`}
-                    initialPos={translateCoordinates(
-                      defaultOriginCoordinates,
-                      screenOffset,
-                    )}
-                    scale={scale}
-                    header={module.name}
-                  >
-                    <Oscillator key={module.id} moduleData={module} />
-                  </Tile>
-                )
-              case 'vca':
-                return (
-                  <Tile
-                    key={`tile_${module.id}`}
-                    id={`tile_${module.id}`}
-                    initialPos={translateCoordinates(
-                      defaultOriginCoordinates,
-                      screenOffset,
-                    )}
-                    scale={scale}
-                    header={module.name}
-                  >
-                    <Vca key={module.id} moduleData={module} />
-                  </Tile>
-                )
-              case 'envelope':
-                return (
-                  <Tile
-                    key={`tile_${module.id}`}
-                    id={`tile_${module.id}`}
-                    initialPos={translateCoordinates(
-                      defaultOriginCoordinates,
-                      screenOffset,
-                    )}
-                    scale={scale}
-                    header={module.name}
-                  >
-                    <Envelope key={module.id} moduleData={module} />
-                  </Tile>
-                )
-              case 'filter':
-                return (
-                  <Tile
-                    key={`tile_${module.id}`}
-                    id={`tile_${module.id}`}
-                    initialPos={translateCoordinates(
-                      defaultOriginCoordinates,
-                      screenOffset,
-                    )}
-                    scale={scale}
-                    header={module.name}
-                  >
-                    <Filter key={module.id} moduleData={module} />
-                  </Tile>
-                )
-            }
-          })}
+          {modules.length > 0 ? (
+            modules.map((module) => {
+              switch (module.type) {
+                case 'oscillator':
+                  return (
+                    <Tile
+                      key={`tile_${module.id}`}
+                      id={`tile_${module.id}`}
+                      initialPos={translateCoordinates(
+                        defaultOriginCoordinates,
+                        screenOffset,
+                      )}
+                      scale={scale}
+                      header={module.name}
+                    >
+                      <Oscillator key={module.id} moduleData={module} />
+                    </Tile>
+                  )
+                case 'vca':
+                  return (
+                    <Tile
+                      key={`tile_${module.id}`}
+                      id={`tile_${module.id}`}
+                      initialPos={translateCoordinates(
+                        defaultOriginCoordinates,
+                        screenOffset,
+                      )}
+                      scale={scale}
+                      header={module.name}
+                    >
+                      <Vca key={module.id} moduleData={module} />
+                    </Tile>
+                  )
+                case 'envelope':
+                  return (
+                    <Tile
+                      key={`tile_${module.id}`}
+                      id={`tile_${module.id}`}
+                      initialPos={translateCoordinates(
+                        defaultOriginCoordinates,
+                        screenOffset,
+                      )}
+                      scale={scale}
+                      header={module.name}
+                    >
+                      <Envelope key={module.id} moduleData={module} />
+                    </Tile>
+                  )
+                case 'filter':
+                  return (
+                    <Tile
+                      key={`tile_${module.id}`}
+                      id={`tile_${module.id}`}
+                      initialPos={translateCoordinates(
+                        defaultOriginCoordinates,
+                        screenOffset,
+                      )}
+                      scale={scale}
+                      header={module.name}
+                    >
+                      <Filter key={module.id} moduleData={module} />
+                    </Tile>
+                  )
+              }
+            })
+          ) : (
+            <div
+              className="flex size-full justify-center flex-col text-center"
+              style={{
+                transform: `scale(${1 * scale})`,
+              }}
+            >
+              <p>
+                Add modules from the menu
+                <span className="hidden md:inline">
+                  {' '}
+                  or right-click on the workspace
+                </span>
+                .
+              </p>
+            </div>
+          )}
         </div>
       </div>
       <div className="fixed left-0 bottom-0 z-10 w-full p-2">
