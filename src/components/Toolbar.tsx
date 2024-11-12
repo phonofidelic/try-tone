@@ -2,18 +2,31 @@ import { ModuleData, ModuleType, useWorkspace } from './Workspace'
 import { Button } from './Button'
 
 export function Toolbar({
+  left,
+  right,
+}: {
+  left: React.ReactNode
+  right: React.ReactNode
+}) {
+  return (
+    <div className="fixed top-0 flex w-screen p-2 z-10">
+      {left}
+      <div className="flex w-full space-x-2 justify-end">{right}</div>
+    </div>
+  )
+}
+
+export function ModuleListAdd({
   modules,
-  // addModule,
   onSelect,
 }: {
   modules: ModuleData<ModuleType>[]
-  // addModule: (data: ModuleData<ModuleType>) => void
   onSelect?: (event: React.MouseEvent) => void
 }) {
   const { addModule } = useWorkspace()
 
   return (
-    <>
+    <div className="flex flex-col gap-2">
       <Button
         onClick={(event) => {
           addModule({
@@ -87,6 +100,6 @@ export function Toolbar({
       >
         Add Filter
       </Button>
-    </>
+    </div>
   )
 }

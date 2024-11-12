@@ -24,13 +24,43 @@ export default function ContextMenu({
   }, [clickOrigin])
 
   return (
+    <Backdrop open={open} onDismiss={onDismiss}>
+      <div
+        className="fixed opacity-100 z-40"
+        style={
+          clickOrigin
+            ? {
+                left: clickOrigin.x,
+                top: clickOrigin.y,
+                translate: `-${menuRect?.width ?? 0}px`,
+              }
+            : { top: 0, left: 0 }
+        }
+        ref={menuRef}
+      >
+        {children}
+      </div>
+    </Backdrop>
+  )
+}
+
+export function Backdrop({
+  open,
+  onDismiss,
+  children,
+}: {
+  open: boolean
+  onDismiss: () => void
+  children: React.ReactNode
+}) {
+  return (
     <>
+      {open && <div className="absolute z-40">{children}</div>}
       <div
         className={clsx(
-          'fixed top-0 left-0 w-screen h-screen z-10 bg-slate-500 transition-opacity duration-200',
+          'fixed top-0 left-0 w-screen h-screen z-30 bg-slate-500/30 dark:bg-slate-900 transition-opacity duration-200',
           {
             'invisible opacity-0': !open,
-            'opacity-50': open,
           },
         )}
         onClick={onDismiss}
@@ -40,24 +70,7 @@ export default function ContextMenu({
             onDismiss()
           }
         }}
-      />
-      {open && (
-        <div
-          className="absolute opacity-100 z-10"
-          style={
-            clickOrigin
-              ? {
-                  left: clickOrigin.x,
-                  top: clickOrigin.y,
-                  translate: `-${menuRect?.width ?? 0}px`,
-                }
-              : { top: 0, left: 0 }
-          }
-          ref={menuRef}
-        >
-          {children}
-        </div>
-      )}
+      ></div>
     </>
   )
 }
