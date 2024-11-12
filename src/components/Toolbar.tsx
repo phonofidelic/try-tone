@@ -1,19 +1,62 @@
 import { ModuleData, ModuleType, useWorkspace } from './Workspace'
 import { Button } from './Button'
+import { Backdrop } from './ContextMenu'
 
 export function Toolbar({
+  isToolbarMenuOpen,
+  menuContent,
+  toolbarContent,
+  onOpenToolbarMenu,
+  onCloseToolbarMenu,
+}: {
+  isToolbarMenuOpen: boolean
+  menuContent: React.ReactNode
+  toolbarContent: React.ReactNode
+  onOpenToolbarMenu: () => void
+  onCloseToolbarMenu: () => void
+}) {
+  return (
+    <div className="fixed top-0 flex w-screen p-2 z-10">
+      <div className="flex relative flex-col gap-2">
+        <Button
+          onClick={() => {
+            onOpenToolbarMenu()
+          }}
+        >
+          Menu
+        </Button>
+        <div>
+          <Backdrop open={isToolbarMenuOpen} onDismiss={onCloseToolbarMenu}>
+            <div className="flex flex-col gap-2">
+              {menuContent}
+              <div
+                className="flex flex-col gap-2 md:hidden"
+                onClick={onCloseToolbarMenu}
+              >
+                {toolbarContent}
+              </div>
+            </div>
+          </Backdrop>
+        </div>
+      </div>
+      <div className="hidden md:flex w-full space-x-2 justify-end">
+        {toolbarContent}
+      </div>
+    </div>
+  )
+}
+
+export function ModuleListAdd({
   modules,
-  // addModule,
   onSelect,
 }: {
   modules: ModuleData<ModuleType>[]
-  // addModule: (data: ModuleData<ModuleType>) => void
   onSelect?: (event: React.MouseEvent) => void
 }) {
   const { addModule } = useWorkspace()
 
   return (
-    <>
+    <div className="flex flex-col gap-2">
       <Button
         onClick={(event) => {
           addModule({
@@ -87,6 +130,6 @@ export function Toolbar({
       >
         Add Filter
       </Button>
-    </>
+    </div>
   )
 }

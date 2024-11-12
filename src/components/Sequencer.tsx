@@ -35,10 +35,10 @@ export function SequencerPanel() {
   return (
     <div
       className={clsx(
-        'relative flex flex-col md:flex-row w-full gap-x-2 bg-white dark:bg-zinc-800 p-2 border border-zinc-200 rounded transition-all',
+        'relative flex flex-col md:flex-row w-full gap-x-2 bg-white dark:bg-zinc-800 border-zinc-200 rounded duration-300 transition-all',
         {
-          'h-fit': isExpanded,
-          'h-0 ': !isExpanded,
+          'h-fit border p-2 ': isExpanded,
+          'h-0': !isExpanded,
         },
       )}
     >
@@ -77,7 +77,7 @@ export function SequencerPanel() {
         </Button>
       </div>
       <div
-        className={clsx('flex w-full gap-y-2 p-2 transition-all', {
+        className={clsx('flex w-full gap-y-2 p-2', {
           'opacity-100': isExpanded,
           'opacity-0': !isExpanded,
         })}

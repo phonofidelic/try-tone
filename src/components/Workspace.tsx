@@ -3,12 +3,12 @@ import clsx from 'clsx'
 import * as Tone from 'tone'
 import { Dexie, type EntityTable } from 'dexie'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Toolbar } from './Toolbar'
+import { ModuleListAdd, Toolbar } from './Toolbar'
 import Tile from './Tile'
 import { Oscillator } from './Oscillator'
 import { Vca } from './Vca'
 import { Envelope } from './Envelope'
-import ContextMenu from './ContextMenu'
+import { ContextMenu } from './ContextMenu'
 import Filter from './Filter'
 import { Button } from './Button'
 import { clamp, makeGrid, translateCoordinates } from '../utils'
@@ -186,6 +186,7 @@ export function Workspace() {
     x: window.innerWidth / 2,
     y: window.innerHeight / 2,
   }
+  const [isToolbarMenuOpen, setIsToolbarMenuOpen] = useState(false)
   const [contextMenuOpen, setContextMenuOpen] = useState(false)
   const [contextMenuClickOrigin, setContextMenuClickOrigin] = useState(
     defaultOriginCoordinates,
@@ -248,8 +249,8 @@ export function Workspace() {
         clickOrigin={contextMenuClickOrigin}
         onDismiss={() => setContextMenuOpen(false)}
       >
-        <div className="flex flex-col space-y-2 *:shadow">
-          <Toolbar
+        <div className="*:*:shadow">
+          <ModuleListAdd
             modules={modules}
             onSelect={() => {
               setContextMenuOpen(false)
@@ -257,28 +258,40 @@ export function Workspace() {
           />
         </div>
       </ContextMenu>
-      <div className="fixed top-0 flex w-screen p-2 z-10">
-        <div className="flex space-x-2">
-          <Toolbar modules={modules} />
-        </div>
-        <div className="flex w-full space-x-2 justify-end">
-          <Button
-            onClick={() => {
-              removeAllModules()
+      <Toolbar
+        menuContent={
+          <ModuleListAdd
+            modules={modules}
+            onSelect={() => {
+              setIsToolbarMenuOpen(false)
             }}
-          >
-            Clear Workspace
-          </Button>
-          <Button
-            onClick={() => {
-              setScale(1)
-              setScreenOffset({ x: 0, y: 0 })
-            }}
-          >
-            Reset view
-          </Button>
-        </div>
-      </div>
+          />
+        }
+        toolbarContent={
+          <>
+            <Button
+              onClick={() => {
+                removeAllModules()
+                setIsToolbarMenuOpen(false)
+              }}
+            >
+              Clear Workspace
+            </Button>
+            <Button
+              onClick={() => {
+                setScale(1)
+                setScreenOffset({ x: 0, y: 0 })
+                setIsToolbarMenuOpen(false)
+              }}
+            >
+              Reset view
+            </Button>
+          </>
+        }
+        onOpenToolbarMenu={() => setIsToolbarMenuOpen(true)}
+        onCloseToolbarMenu={() => setIsToolbarMenuOpen(false)}
+        isToolbarMenuOpen={isToolbarMenuOpen}
+      />
       <div
         ref={workspaceDivRef}
         className={clsx(
