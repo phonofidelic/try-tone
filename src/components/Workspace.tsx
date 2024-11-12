@@ -326,6 +326,26 @@ export function Workspace() {
           setContextMenuClickOrigin({ x: event.clientX, y: event.clientY })
           setContextMenuOpen(true)
         }}
+        onTouchStart={(event) => {
+          if (event.touches.length) {
+            setIsGrabbing(true)
+            setPanOrigin({
+              x: event.touches[0].screenX * scale - screenOffset.x,
+              y: event.touches[0].screenY * scale - screenOffset.y,
+            })
+          }
+        }}
+        onTouchMove={(event) => {
+          if (event.touches.length && panOrigin) {
+            setScreenOffset({
+              x: event.touches[0].screenX * scale - panOrigin.x,
+              y: event.touches[0].screenY * scale - panOrigin.y,
+            })
+          }
+        }}
+        onTouchEnd={() => {
+          setIsGrabbing(false)
+        }}
       >
         <div
           className="relative size-full"
