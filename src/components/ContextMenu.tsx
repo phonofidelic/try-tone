@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 
-export default function ContextMenu({
+export function ContextMenu({
   open,
   clickOrigin,
   children,
@@ -58,8 +58,9 @@ export function Backdrop({
       {open && <div className="absolute z-40">{children}</div>}
       <div
         className={clsx(
-          'fixed top-0 left-0 w-screen h-screen z-30 bg-slate-500/30 dark:bg-slate-900 transition-opacity duration-200',
+          'fixed top-0 left-0 w-screen h-screen z-30 bg-slate-500/30 dark:bg-slate-900/30 backdrop-blur-sm transition-all duration-200',
           {
+            'visible opacity-100': open,
             'invisible opacity-0': !open,
           },
         )}

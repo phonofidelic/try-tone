@@ -8,7 +8,7 @@ import Tile from './Tile'
 import { Oscillator } from './Oscillator'
 import { Vca } from './Vca'
 import { Envelope } from './Envelope'
-import ContextMenu, { Backdrop } from './ContextMenu'
+import { ContextMenu } from './ContextMenu'
 import Filter from './Filter'
 import { Button } from './Button'
 import { clamp, makeGrid, translateCoordinates } from '../utils'
@@ -186,7 +186,7 @@ export function Workspace() {
     x: window.innerWidth / 2,
     y: window.innerHeight / 2,
   }
-  const [isToolbarOpen, setIsToolbarOpen] = useState(false)
+  const [isToolbarMenuOpen, setIsToolbarMenuOpen] = useState(false)
   const [contextMenuOpen, setContextMenuOpen] = useState(false)
   const [contextMenuClickOrigin, setContextMenuClickOrigin] = useState(
     defaultOriginCoordinates,
@@ -259,33 +259,20 @@ export function Workspace() {
         </div>
       </ContextMenu>
       <Toolbar
-        left={
-          <div className="absolute">
-            <Button
-              onClick={() => {
-                setIsToolbarOpen((previous) => !previous)
-              }}
-            >
-              Menu
-            </Button>
-            <Backdrop
-              open={isToolbarOpen}
-              onDismiss={() => setIsToolbarOpen(false)}
-            >
-              <div className="pt-2">
-                <ModuleListAdd
-                  modules={modules}
-                  onSelect={() => setIsToolbarOpen(false)}
-                />
-              </div>
-            </Backdrop>
-          </div>
+        menuContent={
+          <ModuleListAdd
+            modules={modules}
+            onSelect={() => {
+              setIsToolbarMenuOpen(false)
+            }}
+          />
         }
-        right={
+        toolbarContent={
           <>
             <Button
               onClick={() => {
                 removeAllModules()
+                setIsToolbarMenuOpen(false)
               }}
             >
               Clear Workspace
@@ -294,14 +281,17 @@ export function Workspace() {
               onClick={() => {
                 setScale(1)
                 setScreenOffset({ x: 0, y: 0 })
+                setIsToolbarMenuOpen(false)
               }}
             >
               Reset view
             </Button>
           </>
         }
+        onOpenToolbarMenu={() => setIsToolbarMenuOpen(true)}
+        onCloseToolbarMenu={() => setIsToolbarMenuOpen(false)}
+        isToolbarMenuOpen={isToolbarMenuOpen}
       />
-
       <div
         ref={workspaceDivRef}
         className={clsx(
