@@ -80,8 +80,12 @@ export function Oscillator({
   }
 
   return (
-    <div className="flex space-y-2 flex-col p-2">
-      {moduleData.type === 'lfo' && <LedIndicator node={node} />}
+    <div className="flex gap-y-2 flex-col p-2">
+      {moduleData.type === 'lfo' && (
+        <div className="flex justify-center w-full p-4">
+          <LedIndicator node={node} />
+        </div>
+      )}
       <FrequencyDisplay value={frequency} />
       <FrequencyControl
         type={moduleData.type}
@@ -193,16 +197,16 @@ function LedIndicator({
     }
   }, [node])
   return (
-    <div className="flex relative w-full justify-center p-4 h-[16px]">
+    <div className="flex relative size-4">
       <div
-        className="size-4 m-auto rounded-full absolute border-2 z-10"
+        className="size-full m-auto rounded-full absolute border-2"
         style={{
           backgroundColor: `rgb(${Math.max(indicatorValue * 100, 50)}, 0, 0)`,
           borderColor: `rgb(${Math.max(indicatorValue * 100, 50)}, 50, 50)`,
         }}
       />
       <div
-        className="size-4 m-auto rounded-full bg-red-500 blur-md absolute z-20"
+        className="size-full m-auto rounded-full bg-red-500 blur-md absolute"
         style={{ opacity: indicatorValue }}
       />
     </div>
