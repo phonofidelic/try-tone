@@ -35,7 +35,6 @@ export function Oscillator({
 
   const onFrequencyChange = async (value: number) => {
     const roundedValue = Math.round((value + Number.EPSILON) * 100) / 100
-    console.log('onFrequencyChange, roundedValue:', roundedValue)
     setFrequency(roundedValue)
     editModule<'oscillator' | 'lfo'>(id, {
       settings: { ...moduleData.settings, frequency: roundedValue },
