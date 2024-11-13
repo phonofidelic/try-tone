@@ -147,8 +147,8 @@ export default function Tile({
       className={clsx(
         'absolute group cursor-pointer bg-white dark:bg-zinc-800 transition-opacity duration-500 rounded p-2',
         {
-          'drop-shadow': !isPressed,
-          'drop-shadow-lg': isPressed,
+          'md:drop-shadow': !isPressed,
+          'md:drop-shadow-lg': isPressed,
           'opacity-0': !initialized.current,
           'opacity-100': initialized.current,
         },
