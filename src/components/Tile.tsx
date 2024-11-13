@@ -75,17 +75,6 @@ export default function Tile({
     setOffset({ x: 0, y: 0 })
   }
 
-  const onMouseUp = (event: React.MouseEvent) => {
-    updatePosition({ x: event.clientX, y: event.clientY })
-  }
-
-  const onTouchEnd = (event: React.TouchEvent) => {
-    updatePosition({
-      x: event.changedTouches[0].clientX,
-      y: event.changedTouches[0].clientY,
-    })
-  }
-
   useEffect(() => {
     if (!containerRef.current) {
       return
@@ -122,6 +111,10 @@ export default function Tile({
       }
       event.preventDefault()
       event.stopPropagation()
+
+      if (event.touches.length > 1) {
+        return
+      }
 
       const touch = event.touches[0]
       setPos({
@@ -171,9 +164,11 @@ export default function Tile({
             y: event.clientY * scale - containerRef.current.offsetTop,
           })
         }}
-        onMouseUp={onMouseUp}
+        onMouseUp={(event: React.MouseEvent) => {
+          updatePosition({ x: event.clientX, y: event.clientY })
+        }}
         onTouchStart={(event) => {
-          if (!containerRef.current) {
+          if (!containerRef.current || event.touches.length > 1) {
             return
           }
           setIsPressed(true)
@@ -185,7 +180,15 @@ export default function Tile({
               event.touches[0].clientY * scale - containerRef.current.offsetTop,
           })
         }}
-        onTouchEnd={onTouchEnd}
+        onTouchEnd={(event: React.TouchEvent) => {
+          if (event.touches.length > 1) {
+            return
+          }
+          updatePosition({
+            x: event.changedTouches[0].clientX,
+            y: event.changedTouches[0].clientY,
+          })
+        }}
       >
         <h2 className="text-2xl">{header}</h2>
       </div>
