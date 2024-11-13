@@ -5,10 +5,21 @@ import { ModuleData, useWorkspace } from './Workspace'
 import { useAudioNode } from '../AudioNodeContext'
 import { useStopTouchmovePropagation } from '@/hooks'
 
+const frequencyRange = {
+  oscillator: {
+    min: 10.1,
+    max: 20000,
+  },
+  lfo: {
+    min: 0.1,
+    max: 10,
+  },
+}
+
 export function Oscillator({
   moduleData,
 }: {
-  moduleData: ModuleData<'oscillator'>
+  moduleData: ModuleData<'oscillator' | 'lfo'>
 }) {
   const { id } = moduleData
   const [frequency, setFrequency] = useState(moduleData.settings.frequency)
@@ -16,22 +27,24 @@ export function Oscillator({
     'stopped',
   )
   const { modules, editModule, removeModule } = useWorkspace()
-  const { node, getNode } = useAudioNode<'oscillator'>(moduleData)
+  const { node, getNode } = useAudioNode<'oscillator' | 'lfo'>(moduleData)
 
   if (!node) {
     return null
   }
 
   const onFrequencyChange = async (value: number) => {
-    setFrequency(value)
-    editModule<'oscillator'>(id, {
-      settings: { ...moduleData.settings, frequency: value },
+    const roundedValue = Math.round((value + Number.EPSILON) * 100) / 100
+    console.log('onFrequencyChange, roundedValue:', roundedValue)
+    setFrequency(roundedValue)
+    editModule<'oscillator' | 'lfo'>(id, {
+      settings: { ...moduleData.settings, frequency: roundedValue },
     })
-    node.frequency.rampTo(Tone.Frequency(value).toFrequency(), 0)
+    node.frequency.rampTo(Tone.Frequency(roundedValue).toFrequency(), 0)
   }
 
   const onTypeChange = (value: Tone.ToneOscillatorType) => {
-    editModule<'oscillator'>(id, {
+    editModule<'oscillator' | 'lfo'>(id, {
       settings: { ...moduleData.settings, type: value },
     })
     node.type = value
@@ -71,6 +84,7 @@ export function Oscillator({
     <div className="flex space-y-2 flex-col p-2">
       <FrequencyDisplay value={frequency} />
       <FrequencyControl
+        type={moduleData.type}
         value={moduleData.settings.frequency}
         onChange={onFrequencyChange}
       />
@@ -96,13 +110,15 @@ export function Oscillator({
 }
 
 function FrequencyDisplay({ value }: { value: number }) {
-  return <div>Frequency: {Math.round(value)} Hz</div>
+  return <div>Frequency: {value} Hz</div>
 }
 
 function FrequencyControl({
+  type,
   value,
   onChange,
 }: {
+  type: 'oscillator' | 'lfo'
   value: number
   onChange: (value: number) => void
 }) {
@@ -113,9 +129,10 @@ function FrequencyControl({
       ref={inputRef}
       aria-label="frequency"
       type="range"
-      min={20}
-      max={20000}
+      min={frequencyRange[type].min}
+      max={frequencyRange[type].max}
       value={value}
+      step="0.1"
       onChange={(event) => {
         onChange(Tone.Frequency(event.target.value).toFrequency())
       }}

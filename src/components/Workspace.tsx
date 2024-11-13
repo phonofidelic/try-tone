@@ -35,7 +35,7 @@ export type SequencerData = {
   scale: string | null
   created: number
 }
-export type ModuleType = 'oscillator' | 'vca' | 'envelope' | 'filter'
+export type ModuleType = 'oscillator' | 'vca' | 'envelope' | 'filter' | 'lfo'
 
 export type ModuleData<T> = {
   id: string
@@ -71,6 +71,13 @@ export type ModuleData<T> = {
       settings: {
         frequency: number
         type: 'highpass' | 'bandpass' | 'lowpass'
+      }
+    }
+  | {
+      type: 'lfo'
+      settings: {
+        frequency: number
+        type: Tone.ToneOscillatorType
       }
     }
 )
@@ -429,6 +436,21 @@ export function Workspace() {
             modules.map((module) => {
               switch (module.type) {
                 case 'oscillator':
+                  return (
+                    <Tile
+                      key={`tile_${module.id}`}
+                      id={`tile_${module.id}`}
+                      initialPos={translateCoordinates(
+                        defaultOriginCoordinates,
+                        screenOffset,
+                      )}
+                      scale={scale}
+                      header={module.name}
+                    >
+                      <Oscillator key={module.id} moduleData={module} />
+                    </Tile>
+                  )
+                case 'lfo':
                   return (
                     <Tile
                       key={`tile_${module.id}`}
