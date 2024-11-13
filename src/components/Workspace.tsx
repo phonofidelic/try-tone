@@ -231,16 +231,29 @@ export function Workspace() {
       }
     }
 
+    const onTouchMove = (event: TouchEvent) => {
+      event.preventDefault()
+      event.stopPropagation()
+      if (event.touches.length && panOrigin) {
+        setScreenOffset({
+          x: event.touches[0].screenX * scale - panOrigin.x,
+          y: event.touches[0].screenY * scale - panOrigin.y,
+        })
+      }
+    }
+
     workspaceDiv.addEventListener('wheel', onWheel, { passive: false })
+    workspaceDiv.addEventListener('touchmove', onTouchMove, { passive: false })
     document.addEventListener('keydown', onKeyDown)
     document.addEventListener('keyup', onKeyUp)
 
     return () => {
       workspaceDiv.removeEventListener('wheel', onWheel)
+      workspaceDiv.removeEventListener('touchmove', onTouchMove)
       document.removeEventListener('keydown', onKeyDown)
       document.removeEventListener('keyup', onKeyUp)
     }
-  }, [scale])
+  }, [panOrigin, scale])
 
   return (
     <>
@@ -332,14 +345,6 @@ export function Workspace() {
             setPanOrigin({
               x: event.touches[0].screenX * scale - screenOffset.x,
               y: event.touches[0].screenY * scale - screenOffset.y,
-            })
-          }
-        }}
-        onTouchMove={(event) => {
-          if (event.touches.length && panOrigin) {
-            setScreenOffset({
-              x: event.touches[0].screenX * scale - panOrigin.x,
-              y: event.touches[0].screenY * scale - panOrigin.y,
             })
           }
         }}

@@ -36,7 +36,55 @@ export default function Tile({
   const [offset, setOffset] = useState({ x: 0, y: 0 })
   const [isPressed, setIsPressed] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const handleRef = useRef<HTMLDivElement | null>(null)
   const initialized = useRef(false)
+
+  const updatePosition = (gesture: { x: number; y: number }) => {
+    // get current positions state
+    const currentPositionsString = localStorage.getItem('tilePositions')
+    if (currentPositionsString) {
+      const currentPositions = JSON.parse(currentPositionsString) as {
+        [key: string]: { x: string; y: string }
+      }
+
+      // write position to localStorage
+      localStorage.setItem(
+        'tilePositions',
+        JSON.stringify({
+          ...currentPositions,
+          [id]: {
+            x: gesture.x * scale - offset.x,
+            y: gesture.y * scale - offset.y,
+          },
+        }),
+      )
+    } else {
+      // write position to localStorage
+      localStorage.setItem(
+        'tilePositions',
+        JSON.stringify({
+          [id]: {
+            x: gesture.x * scale - offset.x,
+            y: gesture.y * scale - offset.y,
+          },
+        }),
+      )
+    }
+
+    setIsPressed(false)
+    setOffset({ x: 0, y: 0 })
+  }
+
+  const onMouseUp = (event: React.MouseEvent) => {
+    updatePosition({ x: event.clientX, y: event.clientY })
+  }
+
+  const onTouchEnd = (event: React.TouchEvent) => {
+    updatePosition({
+      x: event.changedTouches[0].clientX,
+      y: event.changedTouches[0].clientY,
+    })
+  }
 
   useEffect(() => {
     if (!containerRef.current) {
@@ -52,44 +100,8 @@ export default function Tile({
     initialized.current = true
   }, [])
 
-  const onMouseUp = (event: React.MouseEvent) => {
-    // get current positions state
-    const currentPositionsString = localStorage.getItem('tilePositions')
-    if (currentPositionsString) {
-      const currentPositions = JSON.parse(currentPositionsString) as {
-        [key: string]: { x: string; y: string }
-      }
-
-      // write position to localStorage
-      localStorage.setItem(
-        'tilePositions',
-        JSON.stringify({
-          ...currentPositions,
-          [id]: {
-            x: event.clientX * scale - offset.x,
-            y: event.clientY * scale - offset.y,
-          },
-        }),
-      )
-    } else {
-      // write position to localStorage
-      localStorage.setItem(
-        'tilePositions',
-        JSON.stringify({
-          [id]: {
-            x: event.clientX * scale - offset.x,
-            y: event.clientY * scale - offset.y,
-          },
-        }),
-      )
-    }
-
-    setIsPressed(false)
-    setOffset({ x: 0, y: 0 })
-  }
-
   useEffect(() => {
-    if (!containerRef.current) {
+    if (!containerRef.current || !handleRef.current) {
       return
     }
 
@@ -103,48 +115,29 @@ export default function Tile({
         y: event.clientY * scale - offset.y,
       })
     }
-    // const onMouseUp = (event: MouseEvent) => {
-    //   // get current positions state
-    //   const currentPositionsString = localStorage.getItem('tilePositions')
-    //   if (currentPositionsString) {
-    //     const currentPositions = JSON.parse(currentPositionsString) as {
-    //       [key: string]: { x: string; y: string }
-    //     }
 
-    //     // write position to localStorage
-    //     localStorage.setItem(
-    //       'tilePositions',
-    //       JSON.stringify({
-    //         ...currentPositions,
-    //         [id]: {
-    //           x: event.clientX * scale,
-    //           y: event.clientY * scale,
-    //         },
-    //       }),
-    //     )
-    //   } else {
-    //     // write position to localStorage
-    //     localStorage.setItem(
-    //       'tilePositions',
-    //       JSON.stringify({
-    //         [id]: {
-    //           x: event.clientX * scale,
-    //           y: event.clientY * scale,
-    //         },
-    //       }),
-    //     )
-    //   }
+    const onTouchMove = (event: TouchEvent) => {
+      if (!isPressed || !containerRef.current) {
+        return
+      }
+      event.preventDefault()
+      event.stopPropagation()
 
-    //   setIsPressed(false)
-    //   setOffset({ x: 0, y: 0 })
-    // }
+      const touch = event.touches[0]
+      setPos({
+        x: touch.clientX * scale - offset.x,
+        y: touch.clientY * scale - offset.y,
+      })
+    }
+
+    const handleDiv = handleRef.current
 
     document.addEventListener('mousemove', onMouseMove)
-    // document.addEventListener('mouseup', onMouseUp)
+    handleDiv.addEventListener('touchmove', onTouchMove, { passive: false })
 
     return () => {
       document.removeEventListener('mousemove', onMouseMove)
-      // document.removeEventListener('mouseup', onMouseUp)
+      handleDiv.removeEventListener('touchmove', onTouchMove)
     }
   }, [id, isPressed, offset, scale])
 
@@ -165,27 +158,8 @@ export default function Tile({
         top: pos.y,
       }}
     >
-      {/* <div className="relative">
-        <div
-          className="absolute w-full h-12 p-1 rounded"
-          onMouseDown={(event) => {
-            if (!containerRef.current) {
-              return
-            }
-            setIsPressed(true)
-            setOffset({
-              x: event.clientX * scale - containerRef.current.offsetLeft,
-              y: event.clientY * scale - containerRef.current.offsetTop,
-            })
-          }}
-          // onMouseUp={(event) =>
-          //   editModule(children.props.moduleData.id, { position: pos })
-          // }
-        >
-          <div className="size-full  group-hover:border-2 border-slate-300 dark:border-zinc-500 rounded  border-dashed"></div>
-        </div>
-      </div> */}
       <div
+        ref={handleRef}
         className="size-full  border-2 border-white hover:border-slate-300 hover:dark:border-zinc-500 rounded  border-dashed p-2"
         onMouseDown={(event) => {
           if (!containerRef.current) {
@@ -198,6 +172,20 @@ export default function Tile({
           })
         }}
         onMouseUp={onMouseUp}
+        onTouchStart={(event) => {
+          if (!containerRef.current) {
+            return
+          }
+          setIsPressed(true)
+          setOffset({
+            x:
+              event.touches[0].clientX * scale -
+              containerRef.current.offsetLeft,
+            y:
+              event.touches[0].clientY * scale - containerRef.current.offsetTop,
+          })
+        }}
+        onTouchEnd={onTouchEnd}
       >
         <h2 className="text-2xl">{header}</h2>
       </div>
