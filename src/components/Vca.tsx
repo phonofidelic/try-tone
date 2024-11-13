@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { DestinationSelect } from './DestinationSelect'
 import { ModuleData, useWorkspace } from './Workspace'
 import { useAudioNode } from '../AudioNodeContext'
+import { useStopTouchmovePropagation } from '@/hooks'
 
 export function Vca({ moduleData }: { moduleData: ModuleData<'vca'> }) {
   const { id } = moduleData
@@ -13,7 +14,7 @@ export function Vca({ moduleData }: { moduleData: ModuleData<'vca'> }) {
     if (!node) {
       return
     }
-    setVolumeLevel(node.volume.value)
+    setVolumeLevel(Math.round(node.volume.value))
   }, [node])
 
   if (!node) {
@@ -51,16 +52,7 @@ export function Vca({ moduleData }: { moduleData: ModuleData<'vca'> }) {
   return (
     <div className="flex flex-col space-y-2 rounded p-2">
       <div>Volume: {volumeLevel}</div>
-      <input
-        aria-label="volume"
-        type="range"
-        min={-20}
-        max={20}
-        defaultValue={0}
-        onChange={(event) => {
-          onVolumeChange(Math.round(parseInt(event.target.value)))
-        }}
-      />
+      <VolumeControl value={volumeLevel} onChange={onVolumeChange} />
       <button onClick={handleRemove}>Remove</button>
       <DestinationSelect
         destinations={modules.filter((module) => module.id !== id)}
@@ -68,5 +60,29 @@ export function Vca({ moduleData }: { moduleData: ModuleData<'vca'> }) {
         onChange={onConnect}
       />
     </div>
+  )
+}
+
+function VolumeControl({
+  value,
+  onChange,
+}: {
+  value: number
+  onChange: (value: number) => void
+}) {
+  const inputRef = useStopTouchmovePropagation()
+
+  return (
+    <input
+      ref={inputRef}
+      aria-label="volume"
+      type="range"
+      min={-20}
+      max={20}
+      value={value}
+      onChange={(event) => {
+        onChange(Math.round(parseInt(event.target.value)))
+      }}
+    />
   )
 }

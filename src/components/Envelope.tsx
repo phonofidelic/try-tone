@@ -2,6 +2,7 @@ import * as Tone from 'tone'
 import { DestinationSelect } from './DestinationSelect'
 import { ModuleData, useWorkspace } from './Workspace'
 import { useAudioNode } from '../AudioNodeContext'
+import { useStopTouchmovePropagation } from '@/hooks'
 
 export function Envelope({
   moduleData,
@@ -142,8 +143,12 @@ function RangeControl({
   label: string
   onChange: (value: number) => void
 }) {
+  const inputRef = useStopTouchmovePropagation()
+
   return (
     <input
+      ref={inputRef}
+      className="w-full"
       aria-label={label}
       type="range"
       step={0.1}
