@@ -234,12 +234,10 @@ export function Workspace() {
     }
 
     const onTouchMove = (event: TouchEvent) => {
-      event.preventDefault()
-      event.stopPropagation()
       if (event.touches.length > 1) {
         return
       }
-      if (event.touches.length && panOrigin) {
+      if (event.touches.length === 1 && panOrigin && isGrabbing) {
         setScreenOffset({
           x: event.touches[0].screenX * scale - panOrigin.x,
           y: event.touches[0].screenY * scale - panOrigin.y,
@@ -251,10 +249,6 @@ export function Workspace() {
       pointerEventCache.current.push(event)
       if (event.button === 1 || event.button === 0) {
         setIsGrabbing(true)
-        setPanOrigin({
-          x: event.screenX * scale - screenOffset.x,
-          y: event.screenY * scale - screenOffset.y,
-        })
       }
     }
 
@@ -289,9 +283,9 @@ export function Workspace() {
       }
     }
 
-    const onPointerUp = (_event: PointerEvent) => {
+    const onPointerUp = (event: PointerEvent) => {
       pointerEventCache.current = pointerEventCache.current.filter(
-        (pointerEvent) => pointerEvent.pointerId !== _event.pointerId,
+        (pointerEvent) => pointerEvent.pointerId !== event.pointerId,
       )
       if (pointerEventCache.current.length < 2) {
         previousPointerDiff.current = -1
@@ -322,7 +316,7 @@ export function Workspace() {
       workspaceDiv.removeEventListener('pointerout', onPointerUp)
       workspaceDiv.removeEventListener('pointerleave', onPointerUp)
     }
-  }, [panOrigin, scale, screenOffset.x, screenOffset.y])
+  }, [isGrabbing, panOrigin, scale, screenOffset.x, screenOffset.y])
 
   return (
     <>
@@ -409,15 +403,19 @@ export function Workspace() {
           setContextMenuOpen(true)
         }}
         onTouchStart={(event) => {
-          if (event.touches.length === 1) {
-            setIsGrabbing(true)
-            setPanOrigin({
-              x: event.touches[0].screenX * scale - screenOffset.x,
-              y: event.touches[0].screenY * scale - screenOffset.y,
-            })
+          if (event.touches.length !== 1) {
+            return
           }
+          setIsGrabbing(true)
+          setPanOrigin({
+            x: event.touches[0].screenX * scale - screenOffset.x,
+            y: event.touches[0].screenY * scale - screenOffset.y,
+          })
         }}
         onTouchEnd={() => {
+          setIsGrabbing(false)
+        }}
+        onTouchCancel={() => {
           setIsGrabbing(false)
         }}
       >
