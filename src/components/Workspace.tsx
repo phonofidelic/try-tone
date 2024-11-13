@@ -199,6 +199,8 @@ export function Workspace() {
   const [panOrigin, setPanOrigin] = useState<{ x: number; y: number } | null>(
     null,
   )
+  const pointerEventCache = useRef<PointerEvent[]>([])
+  const previousPointerDiff = useRef(-1)
 
   useEffect(() => {
     if (!workspaceDivRef.current) {
@@ -231,16 +233,90 @@ export function Workspace() {
       }
     }
 
+    const onTouchMove = (event: TouchEvent) => {
+      if (event.touches.length > 1) {
+        return
+      }
+      if (event.touches.length === 1 && panOrigin && isGrabbing) {
+        setScreenOffset({
+          x: event.touches[0].screenX * scale - panOrigin.x,
+          y: event.touches[0].screenY * scale - panOrigin.y,
+        })
+      }
+    }
+
+    const onPointerDown = (event: PointerEvent) => {
+      pointerEventCache.current.push(event)
+      if (event.button === 1 || event.button === 0) {
+        setIsGrabbing(true)
+      }
+    }
+
+    const onPointerMove = (event: PointerEvent) => {
+      const index = pointerEventCache.current.findIndex(
+        (cachedEvent) => cachedEvent.pointerId === event.pointerId,
+      )
+      pointerEventCache.current[index] = event
+
+      if (pointerEventCache.current.length === 2) {
+        const currentDiff = Math.max(
+          Math.abs(
+            pointerEventCache.current[0].clientX -
+              pointerEventCache.current[1].clientX,
+          ),
+          Math.abs(
+            pointerEventCache.current[0].clientY -
+              pointerEventCache.current[1].clientY,
+          ),
+        )
+
+        if (previousPointerDiff.current > 0) {
+          if (currentDiff > previousPointerDiff.current) {
+            setScale((prev) => clamp(prev - 0.05, 1, 4))
+          }
+          if (currentDiff < previousPointerDiff.current) {
+            setScale((prev) => clamp(prev + 0.05, 1, 4))
+          }
+        }
+
+        previousPointerDiff.current = currentDiff
+      }
+    }
+
+    const onPointerUp = (event: PointerEvent) => {
+      pointerEventCache.current = pointerEventCache.current.filter(
+        (pointerEvent) => pointerEvent.pointerId !== event.pointerId,
+      )
+      if (pointerEventCache.current.length < 2) {
+        previousPointerDiff.current = -1
+      }
+      setIsGrabbing(false)
+    }
+
     workspaceDiv.addEventListener('wheel', onWheel, { passive: false })
+    workspaceDiv.addEventListener('touchmove', onTouchMove, { passive: false })
     document.addEventListener('keydown', onKeyDown)
     document.addEventListener('keyup', onKeyUp)
+    workspaceDiv.addEventListener('pointerdown', onPointerDown)
+    workspaceDiv.addEventListener('pointermove', onPointerMove)
+    workspaceDiv.addEventListener('pointerup', onPointerUp)
+    workspaceDiv.addEventListener('pointercancel', onPointerUp)
+    workspaceDiv.addEventListener('pointerout', onPointerUp)
+    workspaceDiv.addEventListener('pointerleave', onPointerUp)
 
     return () => {
       workspaceDiv.removeEventListener('wheel', onWheel)
+      workspaceDiv.removeEventListener('touchmove', onTouchMove)
       document.removeEventListener('keydown', onKeyDown)
       document.removeEventListener('keyup', onKeyUp)
+      workspaceDiv.removeEventListener('pointerdown', onPointerDown)
+      workspaceDiv.removeEventListener('pointermove', onPointerMove)
+      workspaceDiv.removeEventListener('pointerup', onPointerUp)
+      workspaceDiv.removeEventListener('pointercancel', onPointerUp)
+      workspaceDiv.removeEventListener('pointerout', onPointerUp)
+      workspaceDiv.removeEventListener('pointerleave', onPointerUp)
     }
-  }, [scale])
+  }, [isGrabbing, panOrigin, scale, screenOffset.x, screenOffset.y])
 
   return (
     <>
@@ -295,7 +371,7 @@ export function Workspace() {
       <div
         ref={workspaceDivRef}
         className={clsx(
-          'fixed flex flex-col w-screen h-screen top-0 left-0 select-none bg-zinc-100 dark:bg-zinc-900',
+          'fixed flex flex-col w-screen h-screen top-0 left-0 select-none bg-zinc-100 dark:bg-zinc-900 touch-none',
           {
             'cursor-grab': spaceIsPressed,
             'cursor-grabbing': isGrabbing,
@@ -325,6 +401,22 @@ export function Workspace() {
           event.preventDefault()
           setContextMenuClickOrigin({ x: event.clientX, y: event.clientY })
           setContextMenuOpen(true)
+        }}
+        onTouchStart={(event) => {
+          if (event.touches.length !== 1) {
+            return
+          }
+          setIsGrabbing(true)
+          setPanOrigin({
+            x: event.touches[0].screenX * scale - screenOffset.x,
+            y: event.touches[0].screenY * scale - screenOffset.y,
+          })
+        }}
+        onTouchEnd={() => {
+          setIsGrabbing(false)
+        }}
+        onTouchCancel={() => {
+          setIsGrabbing(false)
         }}
       >
         <div

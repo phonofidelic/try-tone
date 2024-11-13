@@ -3,6 +3,7 @@ import { DestinationSelect } from './DestinationSelect'
 import { ModuleData, useWorkspace } from './Workspace'
 import { useEffect, useState } from 'react'
 import { useAudioNode } from '../AudioNodeContext'
+import { useStopTouchmovePropagation } from '@/hooks'
 
 export default function Filter({
   moduleData,
@@ -100,8 +101,11 @@ function FrequencyDisplay({ value }: { value: number }) {
 }
 
 function FrequencyControl({ onChange }: { onChange: (value: number) => void }) {
+  const inputRef = useStopTouchmovePropagation()
+
   return (
     <input
+      ref={inputRef}
       aria-label="frequency"
       type="range"
       min={20}

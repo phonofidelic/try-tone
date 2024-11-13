@@ -3,6 +3,7 @@ import * as Tone from 'tone'
 import { DestinationSelect } from './DestinationSelect'
 import { ModuleData, useWorkspace } from './Workspace'
 import { useAudioNode } from '../AudioNodeContext'
+import { useStopTouchmovePropagation } from '@/hooks'
 
 export function Oscillator({
   moduleData,
@@ -105,8 +106,11 @@ function FrequencyControl({
   value: number
   onChange: (value: number) => void
 }) {
+  const inputRef = useStopTouchmovePropagation()
+
   return (
     <input
+      ref={inputRef}
       aria-label="frequency"
       type="range"
       min={20}
