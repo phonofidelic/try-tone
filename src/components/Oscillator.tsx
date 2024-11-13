@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import * as Tone from 'tone'
 import { DestinationSelect } from './DestinationSelect'
 import { ModuleData, useWorkspace } from './Workspace'
-import { useAudioNode } from '../AudioNodeContext'
+import { useAudioNode, type ModuleNode } from '../AudioNodeContext'
 import { useStopTouchmovePropagation } from '@/hooks'
 
 const frequencyRange = {
@@ -81,6 +81,7 @@ export function Oscillator({
 
   return (
     <div className="flex space-y-2 flex-col p-2">
+      {moduleData.type === 'lfo' && <LedIndicator node={node} />}
       <FrequencyDisplay value={frequency} />
       <FrequencyControl
         type={moduleData.type}
@@ -160,5 +161,50 @@ function OscillatorTypeSelect({
       <option value="sawtooth">Sawtooth</option>
       <option value="square">Square</option>
     </select>
+  )
+}
+
+function LedIndicator({
+  node,
+}: {
+  node: ModuleNode<'oscillator' | 'lfo'>['data']
+}) {
+  const [indicatorValue, setOutputValue] = useState<number>(0)
+  useEffect(() => {
+    if (!node) {
+      return
+    }
+
+    const analyser = new Tone.Analyser('waveform', 1024)
+    node.connect(analyser)
+
+    const updateOutputValue = () => {
+      const analyserData = Array.from(analyser.getValue() as Float32Array)
+      const sum = analyserData.reduce((a, b) => a + b, 0)
+      const average = sum / analyserData.length
+      setOutputValue(average)
+    }
+
+    const intervalId = setInterval(updateOutputValue, 100)
+
+    return () => {
+      clearInterval(intervalId)
+      analyser.disconnect()
+    }
+  }, [node])
+  return (
+    <div className="flex relative w-full justify-center p-4 h-[16px]">
+      <div
+        className="size-4 m-auto rounded-full absolute border-2 z-10"
+        style={{
+          backgroundColor: `rgb(${Math.max(indicatorValue * 100, 50)}, 0, 0)`,
+          borderColor: `rgb(${Math.max(indicatorValue * 100, 50)}, 50, 50)`,
+        }}
+      />
+      <div
+        className="size-4 m-auto rounded-full bg-red-500 blur-md absolute z-20"
+        style={{ opacity: indicatorValue }}
+      />
+    </div>
   )
 }
