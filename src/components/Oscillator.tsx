@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as Tone from 'tone'
 import { DestinationSelect } from './DestinationSelect'
 import { ModuleData, useWorkspace } from './Workspace'
@@ -67,7 +67,11 @@ export function Oscillator({
       const destinationNode = getNode(destinationId)
       console.log('destinationNode:', destinationNode)
       if (destinationNode) {
-        node.connect(destinationNode.data)
+        if (moduleData.type === 'lfo' && destinationNode.type === 'filter') {
+          node.connect(destinationNode.data.frequency)
+        } else {
+          node.connect(destinationNode.data)
+        }
       }
     }
     editModule(id, { destinations: [destinationId] })
@@ -83,7 +87,7 @@ export function Oscillator({
     <div className="flex gap-y-2 flex-col p-2">
       {moduleData.type === 'lfo' && (
         <div className="flex justify-center w-full p-4">
-          <LedIndicator node={node} />
+          <LedIndicator isRunning={displayState === 'started'} node={node} />
         </div>
       )}
       <FrequencyDisplay value={frequency} />
@@ -170,12 +174,19 @@ function OscillatorTypeSelect({
 
 function LedIndicator({
   node,
+  isRunning,
 }: {
-  node: ModuleNode<'oscillator' | 'lfo'>['data']
+  node: ModuleNode<'oscillator' | 'lfo' | 'filter'>['data']
+  isRunning: boolean
 }) {
   const [indicatorValue, setOutputValue] = useState<number>(0)
+  const intervalId = useRef<NodeJS.Timeout | null>(null)
+
   useEffect(() => {
-    if (!node) {
+    if (!node || !isRunning) {
+      if (intervalId.current) {
+        clearInterval(intervalId.current)
+      }
       return
     }
 
@@ -189,19 +200,21 @@ function LedIndicator({
       setOutputValue(average)
     }
 
-    const intervalId = setInterval(updateOutputValue, 100)
+    intervalId.current = setInterval(updateOutputValue, 100)
 
     return () => {
-      clearInterval(intervalId)
+      if (intervalId.current) {
+        clearInterval(intervalId.current)
+      }
       analyser.disconnect()
     }
-  }, [node])
+  }, [node, isRunning])
   return (
     <div className="flex relative size-4">
       <div
         className="size-full m-auto rounded-full absolute border-2"
         style={{
-          backgroundColor: `rgb(${Math.max(indicatorValue * 100, 50)}, 0, 0)`,
+          backgroundColor: `rgb(${Math.max(indicatorValue * 100, 50) + 85}, 0, 0)`,
           borderColor: `rgb(${Math.max(indicatorValue * 100, 50)}, 50, 50)`,
         }}
       />
