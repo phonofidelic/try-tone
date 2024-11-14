@@ -141,6 +141,7 @@ export function ModuleListAdd({
             settings: {
               type: 'lowpass',
               frequency: 350,
+              rolloff: -12,
             },
           })
           typeof onSelect === 'function' && onSelect(event)

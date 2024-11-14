@@ -71,6 +71,7 @@ export type ModuleData<T> = {
       settings: {
         frequency: number
         type: 'highpass' | 'bandpass' | 'lowpass'
+        rolloff: Tone.FilterRollOff
       }
     }
   | {
