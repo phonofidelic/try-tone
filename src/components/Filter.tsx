@@ -17,6 +17,9 @@ export default function Filter({
     useState<Float32Array | null>(null)
   const { modules, editModule, removeModule } = useWorkspace()
   const { node, getNode } = useAudioNode<'filter'>(moduleData)
+  const [filterRollOff, setFilterRollOff] = useState<Tone.FilterRollOff>(
+    moduleData.settings.rolloff ?? -12,
+  )
 
   useEffect(() => {
     if (!node) {
@@ -47,6 +50,15 @@ export default function Filter({
     setFrequencyResponseCurve(node.getFrequencyResponse())
   }
 
+  const onFilterRollOffChange = (value: Tone.FilterRollOff) => {
+    editModule<'filter'>(id, {
+      settings: { ...moduleData.settings, rolloff: value },
+    })
+    node.rolloff = value
+    setFilterRollOff(value)
+    setFrequencyResponseCurve(node.getFrequencyResponse())
+  }
+
   const onConnect = (destinationId: string) => {
     node.disconnect()
     if (destinationId === 'out') {
@@ -68,7 +80,7 @@ export default function Filter({
   }
 
   return (
-    <div className="flex flex-col space-y-2 rounded p-2">
+    <div className="flex flex-col gap-y-2 rounded p-2">
       <FrequencyDisplay value={frequency} />
       <FrequencyControl onChange={onFrequencyChange} />
       <div className="flex w-full items-baseline">
@@ -81,6 +93,10 @@ export default function Filter({
             />
           ))}
       </div>
+      <FilterRolloffSelect
+        value={filterRollOff}
+        onChange={onFilterRollOffChange}
+      />
       <FilterTypeSelect value={frequencyType} onChange={onTypeChange} />
       <div className="flex space-x-2 w-full">
         <button className="w-full" onClick={() => handleRemove(id)}>
@@ -108,10 +124,10 @@ function FrequencyControl({ onChange }: { onChange: (value: number) => void }) {
       ref={inputRef}
       aria-label="frequency"
       type="range"
-      min={20}
+      min={0.1}
       max={20000}
       onChange={(event) => {
-        onChange(parseInt(event.target.value))
+        onChange(Tone.Frequency(event.target.value).toFrequency())
       }}
     />
   )
@@ -138,6 +154,33 @@ function FilterTypeSelect({
       {filterTypes.map((filterType) => (
         <option key={filterType} value={filterType}>
           {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
+        </option>
+      ))}
+    </select>
+  )
+}
+
+function FilterRolloffSelect({
+  value,
+  onChange,
+}: {
+  value: Tone.FilterRollOff
+  onChange: (value: Tone.FilterRollOff) => void
+}) {
+  const filterRolloffs = ['-12', '-24', '-48', '-96'] as const
+
+  return (
+    <select
+      aria-label="rolloff"
+      name="Filter rolloff select"
+      value={value}
+      onChange={(event) =>
+        onChange(Number(event.target.value) as Tone.FilterRollOff)
+      }
+    >
+      {filterRolloffs.map((filterRolloff) => (
+        <option key={filterRolloff} value={filterRolloff}>
+          {filterRolloff}
         </option>
       ))}
     </select>

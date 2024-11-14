@@ -79,6 +79,24 @@ export function ModuleListAdd({
         onClick={(event) => {
           addModule({
             id: crypto.randomUUID(),
+            type: 'lfo',
+            name: `LFO ${modules.filter((module) => module.type === 'lfo').length + 1}`,
+            sources: [],
+            destinations: [],
+            settings: {
+              frequency: 5,
+              type: 'sine',
+            },
+          })
+          typeof onSelect === 'function' && onSelect(event)
+        }}
+      >
+        Add LFO
+      </Button>
+      <Button
+        onClick={(event) => {
+          addModule({
+            id: crypto.randomUUID(),
             type: 'vca',
             name: `VCA ${modules.filter((module) => module.type === 'vca').length + 1}`,
             sources: [],
@@ -123,6 +141,7 @@ export function ModuleListAdd({
             settings: {
               type: 'lowpass',
               frequency: 350,
+              rolloff: -12,
             },
           })
           typeof onSelect === 'function' && onSelect(event)
