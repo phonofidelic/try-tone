@@ -17,8 +17,8 @@ export function Toolbar({
   onCloseToolbarMenu: () => void
 }) {
   return (
-    <div className="fixed top-0 flex w-screen p-2 z-20">
-      <div className="flex relative flex-col gap-2">
+    <>
+      <div className="fixed top-0 flex p-2 flex-col gap-2 z-20">
         <Button
           onClick={() => {
             onOpenToolbarMenu()
@@ -40,10 +40,10 @@ export function Toolbar({
           </Backdrop>
         </div>
       </div>
-      <div className="hidden md:flex w-full space-x-2 justify-end">
+      <div className="fixed top-0 p-2 right-0 z-20 hidden md:flex space-x-2 justify-end">
         {toolbarContent}
       </div>
-    </div>
+    </>
   )
 }
 
