@@ -84,7 +84,7 @@ export function ModuleListAdd({
             sources: [],
             destinations: [],
             settings: {
-              frequency: 10,
+              frequency: 5,
               type: 'sine',
             },
           })
