@@ -1,6 +1,7 @@
 import { ModuleData, ModuleType, useWorkspace } from './Workspace'
 import { Button } from './Button'
 import { Backdrop } from './ContextMenu'
+import { HP_1, U_1 } from '@/constants'
 
 export function Toolbar({
   isToolbarMenuOpen,
@@ -69,6 +70,10 @@ export function ModuleListAdd({
               frequency: 440,
               type: 'sine',
             },
+            size: {
+              u: U_1 * 3,
+              hp: HP_1 * 12,
+            },
           })
           typeof onSelect === 'function' && onSelect(event)
         }}
@@ -87,6 +92,10 @@ export function ModuleListAdd({
               frequency: 5,
               type: 'sine',
             },
+            size: {
+              u: U_1 * 3,
+              hp: HP_1 * 12,
+            },
           })
           typeof onSelect === 'function' && onSelect(event)
         }}
@@ -103,6 +112,10 @@ export function ModuleListAdd({
             destinations: [],
             settings: {
               volume: 0,
+            },
+            size: {
+              u: U_1 * 3,
+              hp: HP_1 * 12,
             },
           })
           typeof onSelect === 'function' && onSelect(event)
@@ -124,6 +137,10 @@ export function ModuleListAdd({
               sustain: 1.0,
               release: 0.8,
             },
+            size: {
+              u: U_1 * 3,
+              hp: HP_1 * 12,
+            },
           })
           typeof onSelect === 'function' && onSelect(event)
         }}
@@ -142,6 +159,10 @@ export function ModuleListAdd({
               type: 'lowpass',
               frequency: 350,
               rolloff: -12,
+            },
+            size: {
+              u: U_1 * 3,
+              hp: HP_1 * 12,
             },
           })
           typeof onSelect === 'function' && onSelect(event)
