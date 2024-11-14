@@ -40,7 +40,6 @@ export default function Tile({
   const [isPressed, setIsPressed] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const handleRef = useRef<HTMLDivElement | null>(null)
-  const initialized = useRef(false)
 
   const updatePosition = useCallback(
     (gesture: { x: number; y: number }) => {
@@ -80,22 +79,6 @@ export default function Tile({
     },
     [id, offset.x, offset.y, scale],
   )
-
-  useEffect(() => {
-    if (!containerRef.current) {
-      return
-    }
-    const containerRect = containerRef.current.getBoundingClientRect()
-    if (!initialized.current) {
-      setPos((prev) =>
-        snap({
-          x: prev.x - containerRect.width / 2,
-          y: prev.y - containerRect.height / 2,
-        }),
-      )
-    }
-    initialized.current = true
-  }, [])
 
   useEffect(() => {
     if (!containerRef.current || !handleRef.current) {
@@ -165,8 +148,6 @@ export default function Tile({
         {
           'md:drop-shadow': !isPressed,
           'md:drop-shadow-lg': isPressed,
-          'opacity-0': !initialized.current,
-          'opacity-100': initialized.current,
         },
       )}
       style={{
