@@ -544,7 +544,7 @@ export function Workspace() {
             </div>
           )}
           <div
-            className="absolute -z-10 top-0 left-0 rounded-md bg-[url('/public/rail-background.webp')]"
+            className="absolute -z-10 top-0 left-0 rounded-md bg-[url('/rail-background.webp')]"
             style={{
               width: `${RACK_HP * HP_1}px`,
               height: `${RACK_U * U_1}px`,

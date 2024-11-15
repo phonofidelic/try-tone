@@ -144,7 +144,7 @@ export default function Tile({
     <div
       ref={containerRef}
       className={clsx(
-        'absolute group bg-white dark:bg-zinc-800 transition-opacity duration-500 rounded p-2',
+        'absolute group bg-zinc-300 dark:bg-zinc-800 transition-opacity duration-500 rounded p-2',
         {
           'md:drop-shadow': !isPressed,
           'md:drop-shadow-lg': isPressed,
@@ -160,7 +160,7 @@ export default function Tile({
       <div
         ref={handleRef}
         className={clsx(
-          'border-2 border-white hover:border-slate-300 hover:dark:border-zinc-500 rounded  border-dashed p-2',
+          'border-2 border-white hover:border-slate-300 hover:dark:border-zinc-500 rounded border-dashed p-2',
           {
             'cursor-grabbing': isPressed,
             'cursor-grab': !isPressed,

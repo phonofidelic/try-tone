@@ -3,16 +3,17 @@ import * as Tone from 'tone'
 import { DestinationSelect } from './DestinationSelect'
 import { ModuleData, useWorkspace } from './Workspace'
 import { useAudioNode, type ModuleNode } from '../AudioNodeContext'
-import { useStopTouchmovePropagation } from '@/hooks'
 
 const frequencyRange = {
   oscillator: {
-    min: 10.1,
-    max: 20000,
+    min: 20,
+    max: 16000,
+    step: 0.01,
   },
   lfo: {
     min: 0.1,
     max: 10,
+    step: 0.01,
   },
 }
 
@@ -22,7 +23,6 @@ export function Oscillator({
   moduleData: ModuleData<'oscillator' | 'lfo'>
 }) {
   const { id } = moduleData
-  const [frequency, setFrequency] = useState(moduleData.settings.frequency)
   const [displayState, setDisplayState] = useState<'started' | 'stopped'>(
     'stopped',
   )
@@ -34,12 +34,10 @@ export function Oscillator({
   }
 
   const onFrequencyChange = async (value: number) => {
-    const roundedValue = Math.round((value + Number.EPSILON) * 100) / 100
-    setFrequency(roundedValue)
     editModule<'oscillator' | 'lfo'>(id, {
-      settings: { ...moduleData.settings, frequency: roundedValue },
+      settings: { ...moduleData.settings, frequency: value },
     })
-    node.frequency.rampTo(Tone.Frequency(roundedValue).toFrequency(), 0)
+    node.frequency.rampTo(Tone.Frequency(value).toFrequency(), 0)
   }
 
   const onTypeChange = (value: Tone.ToneOscillatorType) => {
@@ -84,23 +82,33 @@ export function Oscillator({
   }
 
   return (
-    <div className="flex gap-y-2 flex-col p-2">
+    <div className="flex gap-y-2 flex-col justify-between h-[calc(100%-52px)] p-2">
       {moduleData.type === 'lfo' && (
         <div className="flex justify-center w-full p-4">
           <LedIndicator isRunning={displayState === 'started'} node={node} />
         </div>
       )}
-      <FrequencyDisplay value={frequency} />
-      <FrequencyControl
+      {/* <FrequencyDisplay value={frequency} /> */}
+      {/* <FrequencyControl
         type={moduleData.type}
         value={moduleData.settings.frequency}
         onChange={onFrequencyChange}
-      />
+      /> */}
+      <div className="flex w-full justify-center">
+        <KnobInput
+          label="Frequency"
+          min={frequencyRange[moduleData.type].min}
+          max={frequencyRange[moduleData.type].max}
+          step={frequencyRange[moduleData.type].step}
+          units={['Hz', 'kHz']}
+          onChange={onFrequencyChange}
+        />
+      </div>
       <OscillatorTypeSelect
         initialValue={moduleData.settings.type}
         onChange={onTypeChange}
       />
-      <div className="flex space-x-2 w-full">
+      <div className="flex gap-x-2 w-full">
         <button className="w-full" onClick={onTogglePlay}>
           {displayState === 'stopped' ? 'Start' : 'Stop'}
         </button>
@@ -108,43 +116,156 @@ export function Oscillator({
           Remove
         </button>
       </div>
-      <DestinationSelect
-        destinations={modules.filter((module) => module.id !== id)}
-        initialValue={moduleData.destinations[0] ?? 'not_set'}
-        onChange={onConnect}
-      />
+      <div className="flex gap-x-2 w-full">
+        <DestinationSelect
+          className="w-full"
+          destinations={modules.filter((module) => module.id !== id)}
+          initialValue={moduleData.destinations[0] ?? 'not_set'}
+          onChange={onConnect}
+        />
+      </div>
     </div>
   )
 }
 
-function FrequencyDisplay({ value }: { value: number }) {
-  return <div>Frequency: {value} Hz</div>
-}
-
-function FrequencyControl({
-  type,
-  value,
+function KnobInput({
+  min,
+  max,
+  step,
+  label,
+  units,
   onChange,
 }: {
-  type: 'oscillator' | 'lfo'
-  value: number
+  min: number
+  max: number
+  step: number
+  label: string
+  units?: string[]
   onChange: (value: number) => void
 }) {
-  const inputRef = useStopTouchmovePropagation()
+  const ROTATION_MAX = 80
+  const SENSITIVITY = 0.01
+  const [value, setValue] = useState(min)
+  const [rotationValue, setRotationValue] = useState(0)
+  const [clickOrigin, setClickOrigin] = useState<{
+    x: number
+    y: number
+  } | null>(null)
+  const knobRef = useRef<HTMLDivElement>(null)
+  const previousDelta = useRef(0)
+  const precision = getPrecision(step)
+
+  const onMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
+    setClickOrigin({ x: event.clientX, y: event.clientY })
+  }
+
+  useEffect(() => {
+    if (!knobRef.current) {
+      return
+    }
+
+    const knobElement = knobRef.current
+
+    const rotate = (delta: number) => {
+      const rotationPercentage =
+        clamp(delta * -1, 0, ROTATION_MAX) / ROTATION_MAX
+      const range = max - min
+      setRotationValue(rotationPercentage)
+
+      const newValue = clamp(rotationPercentage * range + min, min, max)
+      const roundedNewValue =
+        Math.round((newValue + Number.EPSILON) * Math.pow(10, precision ?? 2)) /
+        Math.pow(10, precision ?? 2)
+      setValue(roundedNewValue)
+      onChange(newValue)
+    }
+
+    const onMouseMove = (event: MouseEvent) => {
+      if (clickOrigin) {
+        const { y } = clickOrigin
+        const deltaY = event.clientY - y
+        previousDelta.current = clamp(
+          previousDelta.current + deltaY,
+          -ROTATION_MAX * 100,
+          0,
+        )
+        rotate(previousDelta.current * SENSITIVITY)
+      }
+    }
+
+    const onTouchMove = (event: TouchEvent) => {
+      event.stopPropagation()
+
+      if (clickOrigin) {
+        const { y } = clickOrigin
+        const deltaY = event.touches[0].clientY - y
+        rotate(deltaY)
+      }
+    }
+
+    const onMouseUp = () => {
+      setClickOrigin(null)
+    }
+
+    const onTouchEnd = () => {
+      setClickOrigin(null)
+    }
+
+    document.addEventListener('mouseup', onMouseUp)
+    document.addEventListener('mousemove', onMouseMove)
+    knobElement.addEventListener('touchmove', onTouchMove)
+    document.addEventListener('touchend', onTouchEnd)
+
+    return () => {
+      document.removeEventListener('mouseup', onMouseUp)
+      document.removeEventListener('mousemove', onMouseMove)
+      knobElement.removeEventListener('touchmove', onTouchMove)
+      document.removeEventListener('touchend', onTouchEnd)
+    }
+  }, [clickOrigin, max, min, onChange, precision, step])
 
   return (
-    <input
-      ref={inputRef}
-      aria-label="frequency"
-      type="range"
-      min={frequencyRange[type].min}
-      max={frequencyRange[type].max}
-      value={value}
-      step="0.1"
-      onChange={(event) => {
-        onChange(Tone.Frequency(event.target.value).toFrequency())
-      }}
-    />
+    <label className="flex flex-col relative gap-2">
+      <div className="flex justify-center w-full gap-x-1 z-10 dark:text-white">
+        {label}:{' '}
+        <div
+          style={{
+            width: `${(precision + (precision === 1 ? 0.5 : 0)) * 4 * 4}px`,
+          }}
+        >
+          {units?.length
+            ? value > 999 && units.length === 2
+              ? `${Math.trunc(value / 1000)}\u00A0${units[1]}`
+              : `${roundToPrecision(value, precision)}\u00A0${units[0]}`
+            : value}
+        </div>
+      </div>
+      <div className="w-full flex justify-center">
+        <div
+          ref={knobRef}
+          className="size-[80px] bg-[url(/knob.png)] rounded-full bg-center cursor-pointer"
+          style={{
+            transform: `rotate(${rotationValue * (360 - ROTATION_MAX)}deg)`,
+          }}
+          onMouseDown={onMouseDown}
+          onTouchStart={(event) => {
+            setClickOrigin({
+              x: event.touches[0].clientX,
+              y: event.touches[0].clientY,
+            })
+          }}
+        />
+      </div>
+      <input
+        className="invisible"
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(event) => setValue(Number(event.target.value))}
+      />
+    </label>
   )
 }
 
@@ -224,4 +345,24 @@ function LedIndicator({
       />
     </div>
   )
+}
+
+const clamp = (num: number, min: number, max: number) => {
+  return Math.min(Math.max(num, min), max)
+}
+
+function getPrecision(a: number) {
+  if (!isFinite(a)) return 0
+  let e = 1,
+    p = 0
+  while (Math.round(a * e) / e !== a) {
+    e *= 10
+    p++
+  }
+  return p
+}
+
+const roundToPrecision = (num: number, precision: number) => {
+  10 ** precision * num
+  return Math.round(10 ** precision * num) / 10 ** precision
 }
