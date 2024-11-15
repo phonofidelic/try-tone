@@ -404,3 +404,13 @@ export const MIDI_FLAT_NAMES = [
   'Gb9',
   'G9',
 ] as const
+
+/**
+ * 1 vertical rack unit
+ */
+export const U_1 = 162
+
+/**
+ * 1 horizontal pitch unit
+ */
+export const HP_1 = 19

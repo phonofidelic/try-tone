@@ -1,6 +1,7 @@
 import { ModuleData, ModuleType, useWorkspace } from './Workspace'
 import { Button } from './Button'
 import { Backdrop } from './ContextMenu'
+import { HP_1, U_1 } from '@/constants'
 
 export function Toolbar({
   isToolbarMenuOpen,
@@ -16,8 +17,8 @@ export function Toolbar({
   onCloseToolbarMenu: () => void
 }) {
   return (
-    <div className="fixed top-0 flex w-screen p-2 z-20">
-      <div className="flex relative flex-col gap-2">
+    <>
+      <div className="fixed top-0 flex p-2 flex-col gap-2 z-20">
         <Button
           onClick={() => {
             onOpenToolbarMenu()
@@ -39,10 +40,10 @@ export function Toolbar({
           </Backdrop>
         </div>
       </div>
-      <div className="hidden md:flex w-full space-x-2 justify-end">
+      <div className="fixed top-0 p-2 right-0 z-20 hidden md:flex space-x-2 justify-end">
         {toolbarContent}
       </div>
-    </div>
+    </>
   )
 }
 
@@ -69,6 +70,10 @@ export function ModuleListAdd({
               frequency: 440,
               type: 'sine',
             },
+            size: {
+              u: U_1 * 3,
+              hp: HP_1 * 12,
+            },
           })
           typeof onSelect === 'function' && onSelect(event)
         }}
@@ -87,6 +92,10 @@ export function ModuleListAdd({
               frequency: 5,
               type: 'sine',
             },
+            size: {
+              u: U_1 * 3,
+              hp: HP_1 * 12,
+            },
           })
           typeof onSelect === 'function' && onSelect(event)
         }}
@@ -103,6 +112,10 @@ export function ModuleListAdd({
             destinations: [],
             settings: {
               volume: 0,
+            },
+            size: {
+              u: U_1 * 3,
+              hp: HP_1 * 12,
             },
           })
           typeof onSelect === 'function' && onSelect(event)
@@ -124,6 +137,10 @@ export function ModuleListAdd({
               sustain: 1.0,
               release: 0.8,
             },
+            size: {
+              u: U_1 * 3,
+              hp: HP_1 * 12,
+            },
           })
           typeof onSelect === 'function' && onSelect(event)
         }}
@@ -142,6 +159,10 @@ export function ModuleListAdd({
               type: 'lowpass',
               frequency: 350,
               rolloff: -12,
+            },
+            size: {
+              u: U_1 * 3,
+              hp: HP_1 * 12,
             },
           })
           typeof onSelect === 'function' && onSelect(event)
