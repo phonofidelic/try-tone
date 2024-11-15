@@ -229,7 +229,7 @@ function KnobInput({
 
   return (
     <label className="flex flex-col relative gap-2">
-      <div className="flex justify-center w-full gap-x-1 z-10 dark:text-white">
+      <div className="flex justify-center w-full gap-x-1 dark:text-white">
         {label}:{' '}
         <div
           style={{
