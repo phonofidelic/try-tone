@@ -88,12 +88,6 @@ export function Oscillator({
           <LedIndicator isRunning={displayState === 'started'} node={node} />
         </div>
       )}
-      {/* <FrequencyDisplay value={frequency} /> */}
-      {/* <FrequencyControl
-        type={moduleData.type}
-        value={moduleData.settings.frequency}
-        onChange={onFrequencyChange}
-      /> */}
       <div className="flex w-full justify-center">
         <KnobInput
           label="Frequency"
@@ -143,16 +137,17 @@ function KnobInput({
   units?: string[]
   onChange: (value: number) => void
 }) {
-  const ROTATION_MAX = 80
+  const ROTATION_MAX_PERCENT = 80
+  // TODO: make this dynamic based user settings
   const SENSITIVITY = 0.01
   const [value, setValue] = useState(min)
-  const [rotationValue, setRotationValue] = useState(0)
+  const [rotationDegrees, setRotationDegrees] = useState(0)
   const [clickOrigin, setClickOrigin] = useState<{
     x: number
     y: number
   } | null>(null)
   const knobRef = useRef<HTMLDivElement>(null)
-  const previousDelta = useRef(0)
+  const rotationDelta = useRef(0)
   const precision = getPrecision(step)
 
   const onMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -167,29 +162,31 @@ function KnobInput({
     const knobElement = knobRef.current
 
     const rotate = (delta: number) => {
-      const rotationPercentage =
-        clamp(delta * -1, 0, ROTATION_MAX) / ROTATION_MAX
+      const newRotationDegrees = (clamp(delta * -1, 0, 360) / 100) * 360
       const range = max - min
-      setRotationValue(rotationPercentage)
+      const newRotationPercent =
+        newRotationDegrees / ((ROTATION_MAX_PERCENT / 100) * 360)
 
-      const newValue = clamp(rotationPercentage * range + min, min, max)
+      const newValue = clamp(newRotationPercent * range + min, min, max)
       const roundedNewValue =
         Math.round((newValue + Number.EPSILON) * Math.pow(10, precision ?? 2)) /
         Math.pow(10, precision ?? 2)
+
+      setRotationDegrees(newRotationDegrees)
       setValue(roundedNewValue)
       onChange(newValue)
     }
 
     const onMouseMove = (event: MouseEvent) => {
       if (clickOrigin) {
-        const { y } = clickOrigin
-        const deltaY = event.clientY - y
-        previousDelta.current = clamp(
-          previousDelta.current + deltaY,
-          -ROTATION_MAX * 100,
+        const deltaY = event.clientY - clickOrigin.y
+        const newRotationDelta = clamp(
+          rotationDelta.current + deltaY * SENSITIVITY,
+          -ROTATION_MAX_PERCENT,
           0,
         )
-        rotate(previousDelta.current * SENSITIVITY)
+        rotate(newRotationDelta)
+        rotationDelta.current = newRotationDelta
       }
     }
 
@@ -199,7 +196,13 @@ function KnobInput({
       if (clickOrigin) {
         const { y } = clickOrigin
         const deltaY = event.touches[0].clientY - y
-        rotate(deltaY)
+        const newRotationDelta = clamp(
+          rotationDelta.current + deltaY * SENSITIVITY,
+          -ROTATION_MAX_PERCENT,
+          0,
+        )
+        rotate(newRotationDelta)
+        rotationDelta.current = newRotationDelta
       }
     }
 
@@ -245,7 +248,7 @@ function KnobInput({
           ref={knobRef}
           className="size-[80px] bg-[url(/knob.png)] rounded-full bg-center cursor-pointer"
           style={{
-            transform: `rotate(${rotationValue * (360 - ROTATION_MAX)}deg)`,
+            transform: `rotate(${rotationDegrees}deg)`,
           }}
           onMouseDown={onMouseDown}
           onTouchStart={(event) => {
