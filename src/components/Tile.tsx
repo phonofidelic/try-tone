@@ -17,7 +17,7 @@ export default function Tile({
   size: { u: number; hp: number }
   children: React.ReactNode
 }) {
-  const [pos, setPos] = useState(() => {
+  const [position, setPosition] = useState(() => {
     // read initial position from localStorage if found
     const tilePositionsString = localStorage.getItem('tilePositions')
     if (tilePositionsString) {
@@ -55,10 +55,10 @@ export default function Tile({
           'tilePositions',
           JSON.stringify({
             ...currentPositions,
-            [id]: snap({
+            [id]: {
               x: gesture.x * scale - offset.x,
               y: gesture.y * scale - offset.y,
-            }),
+            },
           }),
         )
       } else {
@@ -66,10 +66,10 @@ export default function Tile({
         localStorage.setItem(
           'tilePositions',
           JSON.stringify({
-            [id]: snap({
+            [id]: {
               x: gesture.x * scale - offset.x,
               y: gesture.y * scale - offset.y,
-            }),
+            },
           }),
         )
       }
@@ -90,7 +90,7 @@ export default function Tile({
         return
       }
 
-      setPos(
+      setPosition(
         snap({
           x: event.clientX * scale - offset.x,
           y: event.clientY * scale - offset.y,
@@ -110,7 +110,7 @@ export default function Tile({
       }
 
       const touch = event.touches[0]
-      setPos(
+      setPosition(
         snap({
           x: touch.clientX * scale - offset.x,
           y: touch.clientY * scale - offset.y,
@@ -151,8 +151,8 @@ export default function Tile({
         },
       )}
       style={{
-        left: pos.x,
-        top: pos.y,
+        left: position.x,
+        top: position.y,
         height: size?.u ?? U_1 * 3,
         width: size?.hp ?? HP_1 * 12,
       }}
