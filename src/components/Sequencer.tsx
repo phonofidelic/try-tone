@@ -37,8 +37,8 @@ export function SequencerPanel() {
       className={clsx(
         'relative flex flex-col md:flex-row w-full gap-x-2 bg-white dark:bg-zinc-800 border-zinc-200 rounded duration-300 transition-all',
         {
-          'h-fit border p-2 ': isExpanded,
-          'h-0': !isExpanded,
+          'h-fit border p-2 ': isExpanded && sequencers.length > 0,
+          'h-0': !isExpanded || sequencers.length === 0,
         },
       )}
     >
@@ -77,7 +77,7 @@ export function SequencerPanel() {
         </Button>
       </div>
       <div
-        className={clsx('flex w-full gap-y-2 p-2', {
+        className={clsx('flex w-full gap-y-2', {
           'opacity-100': isExpanded,
           'opacity-0': !isExpanded,
         })}
@@ -452,7 +452,7 @@ function SequencerTabButton({
   setSelectedSequencer(sequencer: SequencerData): void
   setIsExpanded: React.Dispatch<React.SetStateAction<boolean>>
 }) {
-  const { editSequencer, removeSequencer } = useWorkspace()
+  const { editSequencer, removeSequencer, sequencers } = useWorkspace()
   const [isEditing, setIsEditing] = useState(false)
   return (
     <div className="relative group">
@@ -513,7 +513,18 @@ function SequencerTabButton({
         </button>
         <button
           className="relative hidden border-zinc-200 rounded-full bg-white group-hover:flex group-focus:flex group-focus-within:flex items-center justify-center"
-          onClick={() => removeSequencer(sequencer.id)}
+          onClick={() => {
+            const previousSequencer =
+              sequencers[
+                sequencers.findIndex(
+                  (currentSequencer) => currentSequencer.id === sequencer.id,
+                ) - 1
+              ]
+            if (previousSequencer) {
+              setSelectedSequencer(previousSequencer)
+            }
+            removeSequencer(sequencer.id)
+          }}
           title="delete"
         >
           <CloseIcon size={12} className="absolute" />

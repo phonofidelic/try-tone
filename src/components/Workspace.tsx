@@ -543,7 +543,7 @@ export function Workspace() {
             })
           ) : (
             <div
-              className="flex size-full justify-center flex-col text-center"
+              className="text-white flex size-full justify-center flex-col text-center"
               style={{
                 transform: `scale(${1 * scale})`,
               }}
