@@ -13,6 +13,7 @@ import Filter from './Filter'
 import { Button } from './Button'
 import { clamp, makeGrid, translateCoordinates } from '../utils'
 import { SequencerPanel } from './Sequencer'
+import { HP_1, U_1 } from '@/constants'
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const db = new Dexie('ModuleDatabase') as Dexie & {
@@ -43,6 +44,10 @@ export type ModuleData<T> = {
   sources: string[]
   destinations: string[]
   type: T
+  size: {
+    u: number
+    hp: number
+  }
 } & (
   | {
       type: 'oscillator'
@@ -187,12 +192,15 @@ export function useWorkspace() {
   return workspaceContext
 }
 
+const RACK_U = 6
+const RACK_HP = 104
+
 export function Workspace() {
   const { modules, removeAllModules } = useWorkspace()
 
   const defaultOriginCoordinates = {
     x: window.innerWidth / 2,
-    y: window.innerHeight / 2,
+    y: 0,
   }
   const [isToolbarMenuOpen, setIsToolbarMenuOpen] = useState(false)
   const [contextMenuOpen, setContextMenuOpen] = useState(false)
@@ -301,10 +309,10 @@ export function Workspace() {
       setIsGrabbing(false)
     }
 
-    workspaceDiv.addEventListener('wheel', onWheel, { passive: false })
-    workspaceDiv.addEventListener('touchmove', onTouchMove, { passive: false })
     document.addEventListener('keydown', onKeyDown)
     document.addEventListener('keyup', onKeyUp)
+    workspaceDiv.addEventListener('wheel', onWheel, { passive: false })
+    workspaceDiv.addEventListener('touchmove', onTouchMove, { passive: false })
     workspaceDiv.addEventListener('pointerdown', onPointerDown)
     workspaceDiv.addEventListener('pointermove', onPointerMove)
     workspaceDiv.addEventListener('pointerup', onPointerUp)
@@ -313,10 +321,10 @@ export function Workspace() {
     workspaceDiv.addEventListener('pointerleave', onPointerUp)
 
     return () => {
-      workspaceDiv.removeEventListener('wheel', onWheel)
-      workspaceDiv.removeEventListener('touchmove', onTouchMove)
       document.removeEventListener('keydown', onKeyDown)
       document.removeEventListener('keyup', onKeyUp)
+      workspaceDiv.removeEventListener('wheel', onWheel)
+      workspaceDiv.removeEventListener('touchmove', onTouchMove)
       workspaceDiv.removeEventListener('pointerdown', onPointerDown)
       workspaceDiv.removeEventListener('pointermove', onPointerMove)
       workspaceDiv.removeEventListener('pointerup', onPointerUp)
@@ -442,11 +450,15 @@ export function Workspace() {
                       key={`tile_${module.id}`}
                       id={`tile_${module.id}`}
                       initialPos={translateCoordinates(
-                        defaultOriginCoordinates,
+                        {
+                          ...defaultOriginCoordinates,
+                          x: defaultOriginCoordinates.x - module.size.hp / 2,
+                        },
                         screenOffset,
                       )}
                       scale={scale}
                       header={module.name}
+                      size={module.size}
                     >
                       <Oscillator key={module.id} moduleData={module} />
                     </Tile>
@@ -457,11 +469,15 @@ export function Workspace() {
                       key={`tile_${module.id}`}
                       id={`tile_${module.id}`}
                       initialPos={translateCoordinates(
-                        defaultOriginCoordinates,
+                        {
+                          ...defaultOriginCoordinates,
+                          x: defaultOriginCoordinates.x - module.size.hp / 2,
+                        },
                         screenOffset,
                       )}
                       scale={scale}
                       header={module.name}
+                      size={module.size}
                     >
                       <Oscillator key={module.id} moduleData={module} />
                     </Tile>
@@ -472,11 +488,15 @@ export function Workspace() {
                       key={`tile_${module.id}`}
                       id={`tile_${module.id}`}
                       initialPos={translateCoordinates(
-                        defaultOriginCoordinates,
+                        {
+                          ...defaultOriginCoordinates,
+                          x: defaultOriginCoordinates.x - module.size.hp / 2,
+                        },
                         screenOffset,
                       )}
                       scale={scale}
                       header={module.name}
+                      size={module.size}
                     >
                       <Vca key={module.id} moduleData={module} />
                     </Tile>
@@ -487,11 +507,15 @@ export function Workspace() {
                       key={`tile_${module.id}`}
                       id={`tile_${module.id}`}
                       initialPos={translateCoordinates(
-                        defaultOriginCoordinates,
+                        {
+                          ...defaultOriginCoordinates,
+                          x: defaultOriginCoordinates.x - module.size.hp / 2,
+                        },
                         screenOffset,
                       )}
                       scale={scale}
                       header={module.name}
+                      size={module.size}
                     >
                       <Envelope key={module.id} moduleData={module} />
                     </Tile>
@@ -502,11 +526,15 @@ export function Workspace() {
                       key={`tile_${module.id}`}
                       id={`tile_${module.id}`}
                       initialPos={translateCoordinates(
-                        defaultOriginCoordinates,
+                        {
+                          ...defaultOriginCoordinates,
+                          x: defaultOriginCoordinates.x - module.size.hp / 2,
+                        },
                         screenOffset,
                       )}
                       scale={scale}
                       header={module.name}
+                      size={module.size}
                     >
                       <Filter key={module.id} moduleData={module} />
                     </Tile>
@@ -530,6 +558,13 @@ export function Workspace() {
               </p>
             </div>
           )}
+          <div
+            className="absolute -z-10 top-0 left-0 rounded-md bg-[url('/rail-background.webp')]"
+            style={{
+              width: `${RACK_HP * HP_1}px`,
+              height: `${RACK_U * U_1}px`,
+            }}
+          />
         </div>
       </div>
       <div className="fixed left-0 bottom-0 z-10 w-full p-2">

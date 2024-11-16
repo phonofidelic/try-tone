@@ -42,7 +42,7 @@ export function SequencerPanel() {
         },
       )}
     >
-      <div className="absolute left-0 -top-[66px] flex gap-x-2 w-full overflow-x-auto pt-3">
+      <div className="absolute left-0 -top-[66px] flex gap-x-2 overflow-x-auto pt-3">
         {sequencers.map((sequencer) => (
           <SequencerTabButton
             key={sequencer.id}

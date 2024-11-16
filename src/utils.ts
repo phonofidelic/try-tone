@@ -1,8 +1,10 @@
 import {
   ALPHA_NAMES,
+  HP_1,
   MIDI_FLAT_NAMES,
   MIDI_NUM_NAMES,
   MIDI_SHARP_NAMES,
+  U_1,
 } from './constants'
 
 export const clamp = (value: number, min: number, max: number) => {
@@ -16,6 +18,15 @@ export const translateCoordinates = (
   x: coordinates.x - offset.x,
   y: coordinates.y - offset.y,
 })
+
+export function snap({ x, y }: { x: number; y: number }) {
+  // TODO: make configurable in user settings
+  // return { x, y }
+  return {
+    x: Math.round(x / HP_1) * HP_1,
+    y: Math.round(y / (U_1 * 3)) * (U_1 * 3),
+  }
+}
 
 // https://medium.com/geekculture/creating-a-step-sequencer-with-tone-js-32ea3002aaf5
 export const makeGrid = (notes: string[]) => {
