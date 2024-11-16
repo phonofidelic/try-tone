@@ -139,7 +139,7 @@ function KnobInput({
 }) {
   const ROTATION_MAX_PERCENT = 80
   // TODO: make this dynamic based user settings
-  const SENSITIVITY = 0.01
+  const SENSITIVITY = { mouse: 0.3, touch: 0.03 }
   const [value, setValue] = useState(min)
   const [rotationDegrees, setRotationDegrees] = useState(0)
   const [clickOrigin, setClickOrigin] = useState<{
@@ -149,6 +149,7 @@ function KnobInput({
   const knobRef = useRef<HTMLDivElement>(null)
   const rotationDelta = useRef(0)
   const precision = getPrecision(step)
+  const movementDeltaY = useRef(0)
 
   const onMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
     setClickOrigin({ x: event.clientX, y: event.clientY })
@@ -162,7 +163,7 @@ function KnobInput({
     const knobElement = knobRef.current
 
     const rotate = (delta: number) => {
-      const newRotationDegrees = (clamp(delta * -1, 0, 360) / 100) * 360
+      const newRotationDegrees = (clamp(delta, 0, 360) / 100) * 360
       const range = max - min
       const newRotationPercent =
         newRotationDegrees / ((ROTATION_MAX_PERCENT / 100) * 360)
@@ -179,14 +180,15 @@ function KnobInput({
 
     const onMouseMove = (event: MouseEvent) => {
       if (clickOrigin) {
-        const deltaY = event.clientY - clickOrigin.y
+        movementDeltaY.current += event.movementY
         const newRotationDelta = clamp(
-          rotationDelta.current + deltaY * SENSITIVITY,
+          rotationDelta.current + movementDeltaY.current * SENSITIVITY.mouse,
           -ROTATION_MAX_PERCENT,
           0,
         )
-        rotate(newRotationDelta)
+        rotate(newRotationDelta * -1)
         rotationDelta.current = newRotationDelta
+        movementDeltaY.current = 0
       }
     }
 
@@ -194,14 +196,15 @@ function KnobInput({
       event.stopPropagation()
 
       if (clickOrigin) {
+        // TODO: improve touch interactions
         const { y } = clickOrigin
         const deltaY = event.touches[0].clientY - y
         const newRotationDelta = clamp(
-          rotationDelta.current + deltaY * SENSITIVITY,
+          rotationDelta.current + deltaY * SENSITIVITY.touch,
           -ROTATION_MAX_PERCENT,
           0,
         )
-        rotate(newRotationDelta)
+        rotate(newRotationDelta * -1)
         rotationDelta.current = newRotationDelta
       }
     }
@@ -225,7 +228,16 @@ function KnobInput({
       knobElement.removeEventListener('touchmove', onTouchMove)
       document.removeEventListener('touchend', onTouchEnd)
     }
-  }, [clickOrigin, max, min, onChange, precision, step])
+  }, [
+    SENSITIVITY.mouse,
+    SENSITIVITY.touch,
+    clickOrigin,
+    max,
+    min,
+    onChange,
+    precision,
+    step,
+  ])
 
   return (
     <label className="flex flex-col relative gap-2">
@@ -244,20 +256,22 @@ function KnobInput({
         </div>
       </div>
       <div className="w-full flex justify-center">
-        <div
-          ref={knobRef}
-          className="size-[80px] bg-[url(/knob.png)] rounded-full bg-center cursor-pointer"
-          style={{
-            transform: `rotate(${rotationDegrees}deg)`,
-          }}
-          onMouseDown={onMouseDown}
-          onTouchStart={(event) => {
-            setClickOrigin({
-              x: event.touches[0].clientX,
-              y: event.touches[0].clientY,
-            })
-          }}
-        />
+        <div className="drop-shadow-[2px_2px_5px_rgba(0,0,0,0.5)]">
+          <div
+            ref={knobRef}
+            className="size-[80px] bg-[url(/knob.png)] rounded-full bg-center cursor-pointer"
+            style={{
+              transform: `rotate(${rotationDegrees}deg)`,
+            }}
+            onMouseDown={onMouseDown}
+            onTouchStart={(event) => {
+              setClickOrigin({
+                x: event.touches[0].clientX,
+                y: event.touches[0].clientY,
+              })
+            }}
+          />
+        </div>
       </div>
       <input
         className="invisible"
@@ -354,7 +368,7 @@ const clamp = (num: number, min: number, max: number) => {
   return Math.min(Math.max(num, min), max)
 }
 
-function getPrecision(a: number) {
+const getPrecision = (a: number) => {
   if (!isFinite(a)) return 0
   let e = 1,
     p = 0
