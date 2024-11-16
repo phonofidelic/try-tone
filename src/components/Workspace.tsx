@@ -200,7 +200,7 @@ export function Workspace() {
 
   const defaultOriginCoordinates = {
     x: window.innerWidth / 2,
-    y: window.innerHeight / 2,
+    y: 0,
   }
   const [isToolbarMenuOpen, setIsToolbarMenuOpen] = useState(false)
   const [contextMenuOpen, setContextMenuOpen] = useState(false)
@@ -450,7 +450,10 @@ export function Workspace() {
                       key={`tile_${module.id}`}
                       id={`tile_${module.id}`}
                       initialPos={translateCoordinates(
-                        defaultOriginCoordinates,
+                        {
+                          ...defaultOriginCoordinates,
+                          x: defaultOriginCoordinates.x - module.size.hp / 2,
+                        },
                         screenOffset,
                       )}
                       scale={scale}
@@ -466,7 +469,10 @@ export function Workspace() {
                       key={`tile_${module.id}`}
                       id={`tile_${module.id}`}
                       initialPos={translateCoordinates(
-                        defaultOriginCoordinates,
+                        {
+                          ...defaultOriginCoordinates,
+                          x: defaultOriginCoordinates.x - module.size.hp / 2,
+                        },
                         screenOffset,
                       )}
                       scale={scale}
@@ -482,7 +488,10 @@ export function Workspace() {
                       key={`tile_${module.id}`}
                       id={`tile_${module.id}`}
                       initialPos={translateCoordinates(
-                        defaultOriginCoordinates,
+                        {
+                          ...defaultOriginCoordinates,
+                          x: defaultOriginCoordinates.x - module.size.hp / 2,
+                        },
                         screenOffset,
                       )}
                       scale={scale}
@@ -498,7 +507,10 @@ export function Workspace() {
                       key={`tile_${module.id}`}
                       id={`tile_${module.id}`}
                       initialPos={translateCoordinates(
-                        defaultOriginCoordinates,
+                        {
+                          ...defaultOriginCoordinates,
+                          x: defaultOriginCoordinates.x - module.size.hp / 2,
+                        },
                         screenOffset,
                       )}
                       scale={scale}
@@ -514,7 +526,10 @@ export function Workspace() {
                       key={`tile_${module.id}`}
                       id={`tile_${module.id}`}
                       initialPos={translateCoordinates(
-                        defaultOriginCoordinates,
+                        {
+                          ...defaultOriginCoordinates,
+                          x: defaultOriginCoordinates.x - module.size.hp / 2,
+                        },
                         screenOffset,
                       )}
                       scale={scale}

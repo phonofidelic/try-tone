@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { clsx } from 'clsx'
 import { HP_1, U_1 } from '@/constants'
+import { snap } from '@/utils'
 
 export default function Tile({
   id,
@@ -17,32 +18,10 @@ export default function Tile({
   size: { u: number; hp: number }
   children: React.ReactNode
 }) {
-  const [position, setPosition] = useState(() => {
-    // read initial position from localStorage if found
-    const tilePositionsString = localStorage.getItem('tilePositions')
-    if (tilePositionsString) {
-      const tilePositions = JSON.parse(tilePositionsString) as {
-        [key: string]: { x: string; y: string }
-      }
-      const storedPosition = tilePositions[id]
-
-      if (storedPosition) {
-        return snap({
-          x: Number(storedPosition.x),
-          y: Number(storedPosition.y),
-        })
-      }
-    }
-    // else use initialPos
-    return snap(initialPos)
-  })
   const [offset, setOffset] = useState({ x: 0, y: 0 })
-  const [isPressed, setIsPressed] = useState(false)
-  const containerRef = useRef<HTMLDivElement | null>(null)
-  const handleRef = useRef<HTMLDivElement | null>(null)
-
   const updatePosition = useCallback(
     (gesture: { x: number; y: number }) => {
+      console.log(gesture)
       // get current positions state
       const currentPositionsString = localStorage.getItem('tilePositions')
       if (currentPositionsString) {
@@ -79,6 +58,45 @@ export default function Tile({
     },
     [id, offset.x, offset.y, scale],
   )
+
+  const [position, setPosition] = useState(() => {
+    // read initial position from localStorage if found
+    const tilePositionsString = localStorage.getItem('tilePositions')
+    if (tilePositionsString) {
+      const tilePositions = JSON.parse(tilePositionsString) as {
+        [key: string]: { x: string; y: string }
+      }
+      const storedPosition = tilePositions[id]
+
+      if (storedPosition) {
+        return snap({
+          x: Number(storedPosition.x),
+          y: Number(storedPosition.y),
+        })
+      }
+      // else use initialPos and set to localStorage
+      localStorage.setItem(
+        'tilePositions',
+        JSON.stringify({
+          ...tilePositions,
+          [id]: snap(initialPos),
+        }),
+      )
+      return snap(initialPos)
+    }
+    // else use initialPos and set to localStorage
+    localStorage.setItem(
+      'tilePositions',
+      JSON.stringify({
+        [id]: snap(initialPos),
+      }),
+    )
+    return snap(initialPos)
+  })
+
+  const [isPressed, setIsPressed] = useState(false)
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const handleRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     if (!containerRef.current || !handleRef.current) {
@@ -123,7 +141,7 @@ export default function Tile({
         return
       }
 
-      updatePosition(snap({ x: event.clientX, y: event.clientY }))
+      updatePosition({ x: event.clientX, y: event.clientY })
       setIsPressed(false)
     }
 
@@ -171,39 +189,32 @@ export default function Tile({
             return
           }
           setIsPressed(true)
-          setOffset(
-            snap({
-              x: event.clientX * scale - containerRef.current.offsetLeft,
-              y: event.clientY * scale - containerRef.current.offsetTop,
-            }),
-          )
+          setOffset({
+            x: event.clientX * scale - containerRef.current.offsetLeft,
+            y: event.clientY * scale - containerRef.current.offsetTop,
+          })
         }}
         onTouchStart={(event) => {
           if (!containerRef.current || event.touches.length > 1) {
             return
           }
           setIsPressed(true)
-          setOffset(
-            snap({
-              x:
-                event.touches[0].clientX * scale -
-                containerRef.current.offsetLeft,
-              y:
-                event.touches[0].clientY * scale -
-                containerRef.current.offsetTop,
-            }),
-          )
+          setOffset({
+            x:
+              event.touches[0].clientX * scale -
+              containerRef.current.offsetLeft,
+            y:
+              event.touches[0].clientY * scale - containerRef.current.offsetTop,
+          })
         }}
         onTouchEnd={(event: React.TouchEvent) => {
           if (event.touches.length > 1) {
             return
           }
-          updatePosition(
-            snap({
-              x: event.changedTouches[0].clientX,
-              y: event.changedTouches[0].clientY,
-            }),
-          )
+          updatePosition({
+            x: event.changedTouches[0].clientX,
+            y: event.changedTouches[0].clientY,
+          })
         }}
       >
         <h2 className="text-2xl">{header}</h2>
@@ -211,12 +222,4 @@ export default function Tile({
       {children}
     </div>
   )
-}
-
-function snap({ x, y }: { x: number; y: number }) {
-  // return { x, y }
-  return {
-    x: Math.round(x / HP_1) * HP_1,
-    y: Math.round(y / (U_1 * 3)) * U_1 * 3,
-  }
 }
