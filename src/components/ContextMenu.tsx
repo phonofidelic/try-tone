@@ -48,21 +48,25 @@ export function Backdrop({
   open,
   onDismiss,
   children,
+  zIndex,
 }: {
   open: boolean
   onDismiss: () => void
-  children: React.ReactNode
+  children?: React.ReactNode
+  zIndex?: string
 }) {
   return (
     <>
-      {open && <div className="absolute z-40">{children}</div>}
+      {open && children && <div className="absolute z-40">{children}</div>}
       <div
         className={clsx(
-          'fixed top-0 left-0 w-screen h-screen z-30 bg-slate-500/30 dark:bg-slate-900/30 backdrop-blur-sm transition-all duration-200',
+          'fixed top-0 left-0 w-screen h-screen bg-slate-500/30 dark:bg-slate-900/30 backdrop-blur-sm transition-all duration-200',
           {
             'visible opacity-100': open,
             'invisible opacity-0': !open,
           },
+          { 'z-30': !zIndex },
+          zIndex,
         )}
         onClick={onDismiss}
         onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
