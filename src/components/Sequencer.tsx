@@ -86,7 +86,7 @@ export function SequencerPanel() {
         {sequencers.map((sequencer) => (
           <div
             key={sequencer.id}
-            className={clsx('flex w-full gap-x-2', {
+            className={clsx('relative overflow-x-auto flex w-full gap-x-2', {
               hidden: sequencer.id !== selectedSequencer?.id,
             })}
           >
@@ -411,7 +411,7 @@ export function Sequencer({
         </Button>
       </div>
 
-      <div className="w-full overflow-y-auto grid grid-cols-8 grid-rows-8 gap-1">
+      <div className="w-full min-w-[486px] grid grid-cols-8 grid-rows-8 gap-1">
         {!sequencerRef.current.sequence ? (
           <div className="col-span-8 row-span-8 flex flex-col justify-center h-full text-center self-stretch">
             <div>Select a scale for the sequence</div>
