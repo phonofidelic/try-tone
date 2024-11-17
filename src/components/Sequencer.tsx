@@ -13,6 +13,7 @@ import { ALPHA_NAMES, OCTAVES, SCALES } from '../constants'
 import { ModuleNode, useAudioNodes } from '../AudioNodeContext'
 import { EditIcon, CloseIcon } from './Icons'
 import { useTransport } from '../App'
+import { Backdrop } from './ContextMenu'
 
 const DEFAULT_BPM = 60
 
@@ -33,75 +34,83 @@ export function SequencerPanel() {
   const [bpm, setBpm] = useState(DEFAULT_BPM)
 
   return (
-    <div
-      className={clsx(
-        'relative flex flex-col md:flex-row w-full gap-x-2 bg-white dark:bg-zinc-800 border-zinc-200 rounded duration-300 transition-all',
-        {
-          'h-fit border p-2 ': isExpanded && sequencers.length > 0,
-          'h-0': !isExpanded || sequencers.length === 0,
-        },
-      )}
-    >
-      <div className="absolute left-0 -top-[66px] flex gap-x-2 overflow-x-auto pt-3">
-        {sequencers.map((sequencer) => (
-          <SequencerTabButton
-            key={sequencer.id}
-            sequencer={sequencer}
-            selectedSequencer={selectedSequencer}
-            setSelectedSequencer={(sequencer: SequencerData) => {
-              setSelectedSequencer(sequencer)
-            }}
-            setIsExpanded={setIsExpanded}
-          />
-        ))}
-        <Button
-          onClick={() => {
-            const newSequencer = {
-              id: crypto.randomUUID(),
-              name: `Sequencer ${sequencers.length + 1}`,
-              pitchNodeId: 'not_set',
-              gateNodeId: 'not_set',
-              baseNote: null,
-              octave: null,
-              scale: null,
-              sequence: null,
-              created: Date.now(),
-            }
-
-            addSequencer(newSequencer)
-            setSelectedSequencer(newSequencer)
-            setIsExpanded(true)
-          }}
-        >
-          + Add Sequencer
-        </Button>
-      </div>
+    <>
       <div
-        className={clsx('flex w-full gap-y-2', {
-          'opacity-100': isExpanded,
-          'opacity-0': !isExpanded,
-        })}
+        className={clsx(
+          'relative flex flex-col md:flex-row w-full gap-x-2 bg-white dark:bg-zinc-800 border-zinc-200 rounded duration-300 transition-all',
+          {
+            'h-fit border p-2 ': isExpanded && sequencers.length > 0,
+            'h-0': !isExpanded || sequencers.length === 0,
+          },
+        )}
       >
-        {sequencers.map((sequencer) => (
-          <div
-            key={sequencer.id}
-            className={clsx('flex w-full gap-x-2', {
-              hidden: sequencer.id !== selectedSequencer?.id,
-            })}
+        <div className="absolute left-0 -top-[66px] flex gap-x-2 overflow-x-auto pt-3 w-full">
+          <Button
+            className="mb-8"
+            onClick={() => {
+              const newSequencer = {
+                id: crypto.randomUUID(),
+                name: `Sequencer ${sequencers.length + 1}`,
+                pitchNodeId: 'not_set',
+                gateNodeId: 'not_set',
+                baseNote: null,
+                octave: null,
+                scale: null,
+                sequence: null,
+                created: Date.now(),
+              }
+
+              addSequencer(newSequencer)
+              setSelectedSequencer(newSequencer)
+              setIsExpanded(true)
+            }}
           >
-            <Sequencer
-              sequencerData={sequencer}
-              bpm={bpm}
-              isPlaying={isPlaying}
-              setIsPlaying={setIsPlaying}
-              playingIndex={playingIndex}
-              setPlayingIndex={setPlayingIndex}
-              onBpmChange={(value) => setBpm(value)}
+            + Add Sequencer
+          </Button>
+          {sequencers.map((sequencer) => (
+            <SequencerTabButton
+              key={sequencer.id}
+              sequencer={sequencer}
+              selectedSequencer={selectedSequencer}
+              setSelectedSequencer={(sequencer: SequencerData) => {
+                setSelectedSequencer(sequencer)
+              }}
+              setIsExpanded={setIsExpanded}
             />
-          </div>
-        ))}
+          ))}
+        </div>
+        <div
+          className={clsx('flex w-full gap-y-2', {
+            'opacity-100': isExpanded,
+            'opacity-0': !isExpanded,
+          })}
+        >
+          {sequencers.map((sequencer) => (
+            <div
+              key={sequencer.id}
+              className={clsx('relative overflow-x-auto flex w-full gap-x-2', {
+                hidden: sequencer.id !== selectedSequencer?.id,
+              })}
+            >
+              <Sequencer
+                sequencerData={sequencer}
+                bpm={bpm}
+                isPlaying={isPlaying}
+                setIsPlaying={setIsPlaying}
+                playingIndex={playingIndex}
+                setPlayingIndex={setPlayingIndex}
+                onBpmChange={(value) => setBpm(value)}
+              />
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+      <Backdrop
+        open={isExpanded}
+        onDismiss={() => setIsExpanded(false)}
+        zIndex="-z-10"
+      />
+    </>
   )
 }
 
@@ -326,7 +335,7 @@ export function Sequencer({
 
   return (
     <>
-      <div className="flex flex-col gap-y-2 mt-auto overflow-y-auto w-fit">
+      <div className="flex flex-col gap-y-2 mt-auto overflow-y-auto min-w-max">
         <label className="">
           <div className="text-xs">V/Oct out</div>
           <DestinationSelect
@@ -410,31 +419,27 @@ export function Sequencer({
         </Button>
       </div>
 
-      <div className="flex flex-col w-full overflow-y-auto">
+      <div className="w-full min-w-[486px] grid grid-cols-8 grid-rows-8 gap-1">
         {!sequencerRef.current.sequence ? (
-          <div className="size-full flex flex-col justify-center place-self-stretch text-center self-stretch">
+          <div className="col-span-8 row-span-8 flex flex-col justify-center h-full text-center self-stretch">
             <div>Select a scale for the sequence</div>
           </div>
         ) : (
-          sequencerRef.current.sequence.map((row) => (
-            <div
-              key={row.id}
-              className="grid grid-flow-col auto-cols-fr w-full"
-            >
-              {row.value.map((column, index) => (
-                <button
-                  key={column.id}
-                  className={clsx('m-1 p-1 rounded border-2', {
-                    'bg-green-500/75': column.isActive,
-                    'border-green-500': index === playingIndex,
-                  })}
-                  onClick={() => toggleNote(column)}
-                >
-                  {column.note}
-                </button>
-              ))}
-            </div>
-          ))
+          sequencerRef.current.sequence
+            .map((row) => row.value)
+            .flat()
+            .map((column, index) => (
+              <button
+                key={column.id}
+                className={clsx('p-1 rounded border-2', {
+                  'bg-green-500/75': column.isActive,
+                  'border-green-500': index % 8 === playingIndex,
+                })}
+                onClick={() => toggleNote(column)}
+              >
+                {column.note}
+              </button>
+            ))
         )}
       </div>
     </>
@@ -469,7 +474,7 @@ function SequencerTabButton({
           }
         }}
         className={clsx({
-          'bg-zinc-200 underline dark:bg-zinc-900':
+          'bg-zinc-100 underline dark:bg-zinc-900':
             selectedSequencer && selectedSequencer.id === sequencer.id,
         })}
       >
