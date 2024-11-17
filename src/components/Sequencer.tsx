@@ -42,19 +42,9 @@ export function SequencerPanel() {
         },
       )}
     >
-      <div className="absolute left-0 -top-[66px] flex gap-x-2 overflow-x-auto pt-3">
-        {sequencers.map((sequencer) => (
-          <SequencerTabButton
-            key={sequencer.id}
-            sequencer={sequencer}
-            selectedSequencer={selectedSequencer}
-            setSelectedSequencer={(sequencer: SequencerData) => {
-              setSelectedSequencer(sequencer)
-            }}
-            setIsExpanded={setIsExpanded}
-          />
-        ))}
+      <div className="absolute left-0 -top-[66px] flex gap-x-2 overflow-x-auto pt-3 w-full">
         <Button
+          className="mb-8"
           onClick={() => {
             const newSequencer = {
               id: crypto.randomUUID(),
@@ -75,6 +65,17 @@ export function SequencerPanel() {
         >
           + Add Sequencer
         </Button>
+        {sequencers.map((sequencer) => (
+          <SequencerTabButton
+            key={sequencer.id}
+            sequencer={sequencer}
+            selectedSequencer={selectedSequencer}
+            setSelectedSequencer={(sequencer: SequencerData) => {
+              setSelectedSequencer(sequencer)
+            }}
+            setIsExpanded={setIsExpanded}
+          />
+        ))}
       </div>
       <div
         className={clsx('flex w-full gap-y-2', {
@@ -326,7 +327,7 @@ export function Sequencer({
 
   return (
     <>
-      <div className="flex flex-col gap-y-2 mt-auto overflow-y-auto w-fit">
+      <div className="flex flex-col gap-y-2 mt-auto overflow-y-auto min-w-max">
         <label className="">
           <div className="text-xs">V/Oct out</div>
           <DestinationSelect
@@ -410,31 +411,27 @@ export function Sequencer({
         </Button>
       </div>
 
-      <div className="flex flex-col w-full overflow-y-auto">
+      <div className="w-full overflow-y-auto grid grid-cols-8 grid-rows-8 gap-1">
         {!sequencerRef.current.sequence ? (
-          <div className="size-full flex flex-col justify-center place-self-stretch text-center self-stretch">
+          <div className="col-span-8 row-span-8 flex flex-col justify-center h-full text-center self-stretch">
             <div>Select a scale for the sequence</div>
           </div>
         ) : (
-          sequencerRef.current.sequence.map((row) => (
-            <div
-              key={row.id}
-              className="grid grid-flow-col auto-cols-fr w-full"
-            >
-              {row.value.map((column, index) => (
-                <button
-                  key={column.id}
-                  className={clsx('m-1 p-1 rounded border-2', {
-                    'bg-green-500/75': column.isActive,
-                    'border-green-500': index === playingIndex,
-                  })}
-                  onClick={() => toggleNote(column)}
-                >
-                  {column.note}
-                </button>
-              ))}
-            </div>
-          ))
+          sequencerRef.current.sequence
+            .map((row) => row.value)
+            .flat()
+            .map((column, index) => (
+              <button
+                key={column.id}
+                className={clsx('p-1 rounded border-2', {
+                  'bg-green-500/75': column.isActive,
+                  'border-green-500': index % 8 === playingIndex,
+                })}
+                onClick={() => toggleNote(column)}
+              >
+                {column.note}
+              </button>
+            ))
         )}
       </div>
     </>
@@ -469,7 +466,7 @@ function SequencerTabButton({
           }
         }}
         className={clsx({
-          'bg-zinc-200 underline dark:bg-zinc-900':
+          'bg-zinc-100 underline dark:bg-zinc-900':
             selectedSequencer && selectedSequencer.id === sequencer.id,
         })}
       >
