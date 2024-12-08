@@ -1,8 +1,14 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
-import * as Tone from 'tone'
 import { Dexie, type EntityTable } from 'dexie'
-import { useLiveQuery } from 'dexie-react-hooks'
+import { HP_1, U_1 } from '@/constants'
+import { clamp, translateCoordinates } from '@/utils'
+import {
+  ModuleData,
+  ModuleType,
+  SequencerData,
+  useModules,
+} from '@/ModulesContext'
 import { ModuleListAdd, Toolbar } from './Toolbar'
 import Tile from './Tile'
 import { Oscillator } from './Oscillator'
@@ -11,9 +17,7 @@ import { Envelope } from './Envelope'
 import { ContextMenu } from './ContextMenu'
 import Filter from './Filter'
 import { Button } from './Button'
-import { clamp, makeGrid, translateCoordinates } from '../utils'
 import { SequencerPanel } from './Sequencer'
-import { HP_1, U_1 } from '@/constants'
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const db = new Dexie('ModuleDatabase') as Dexie & {
@@ -25,178 +29,11 @@ db.version(1).stores({
   sequencers: '++id, created',
 })
 
-export type SequencerData = {
-  id: string
-  name: string
-  sequence: ReturnType<typeof makeGrid> | null
-  pitchNodeId: string
-  gateNodeId: string
-  baseNote: string | null
-  octave: string | null
-  scale: string | null
-  created: number
-}
-export type ModuleType = 'oscillator' | 'vca' | 'envelope' | 'filter' | 'lfo'
-
-export type ModuleData<T> = {
-  id: string
-  name: string
-  sources: string[]
-  destinations: string[]
-  type: T
-  size: {
-    u: number
-    hp: number
-  }
-} & (
-  | {
-      type: 'oscillator'
-      settings: {
-        frequency: number
-        type: Tone.ToneOscillatorType
-      }
-    }
-  | {
-      type: 'vca'
-      settings: {
-        volume: number
-      }
-    }
-  | {
-      type: 'envelope'
-      settings: {
-        attack: number
-        decay: number
-        sustain: number
-        release: number
-      }
-    }
-  | {
-      type: 'filter'
-      settings: {
-        frequency: number
-        type: 'highpass' | 'bandpass' | 'lowpass'
-        rolloff: Tone.FilterRollOff
-      }
-    }
-  | {
-      type: 'lfo'
-      settings: {
-        frequency: number
-        type: Tone.ToneOscillatorType
-      }
-    }
-)
-
-type WorkspaceContextValue = {
-  modules: ModuleData<ModuleType>[]
-  addModule: (newModule: ModuleData<ModuleType>) => void
-  editModule<TModuleType>(
-    moduleId: string,
-    update: Partial<ModuleData<TModuleType>>,
-  ): void
-  removeModule: (moduleId: string) => void
-  removeAllModules: () => void
-  sequencers: SequencerData[]
-  addSequencer: (newSequencer: SequencerData) => void
-  editSequencer: (sequencerId: string, update: Partial<SequencerData>) => void
-  removeSequencer: (sequencerId: string) => void
-}
-
-const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)
-
-export function WorkspaceContextProvider({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const modules = useLiveQuery<ModuleData<ModuleType>[], null>(
-    () => db.modules.toArray(),
-    [],
-    null,
-  )
-
-  const addModule = async (newModule: ModuleData<ModuleType>) => {
-    await db.modules.add(newModule)
-  }
-
-  async function editModule<TModuleType>(
-    moduleId: string,
-    update: Partial<ModuleData<TModuleType>>,
-  ) {
-    await db.modules.update(moduleId, { ...update })
-  }
-
-  const removeModule = async (moduleId: string) => {
-    await db.modules.delete(moduleId)
-  }
-
-  const removeAllModules = async () => {
-    await db.modules.clear()
-  }
-
-  const addSequencer = async (newSequencer: SequencerData) => {
-    await db.sequencers.add(newSequencer)
-  }
-
-  const editSequencer = async (
-    sequencerId: string,
-    update: Partial<SequencerData>,
-  ) => {
-    await db.sequencers.update(sequencerId, { ...update })
-  }
-
-  const removeSequencer = async (sequencerId: string) => {
-    await db.sequencers.delete(sequencerId)
-  }
-
-  const sequencers = useLiveQuery<SequencerData[], []>(
-    () => db.sequencers.orderBy('created').toArray(),
-    [],
-    [],
-  )
-
-  if (!modules) {
-    return null
-  }
-
-  return (
-    <WorkspaceContext.Provider
-      value={{
-        modules,
-        addModule,
-        editModule,
-        removeModule,
-        removeAllModules,
-        sequencers,
-        addSequencer,
-        editSequencer,
-        removeSequencer,
-      }}
-    >
-      {children}
-    </WorkspaceContext.Provider>
-  )
-}
-
-// eslint-disable-next-line react-refresh/only-export-components
-export function useWorkspace() {
-  const workspaceContext = useContext(WorkspaceContext)
-
-  if (!workspaceContext) {
-    throw new Error(
-      'useWorkspace must be used within a WorkspaceContextProvider',
-    )
-  }
-
-  return workspaceContext
-}
-
 const RACK_U = 6
 const RACK_HP = 104
 
 export function Workspace() {
-  const { modules, removeAllModules } = useWorkspace()
+  const { modules, removeAllModules } = useModules()
 
   const defaultOriginCoordinates = {
     x: window.innerWidth / 2,

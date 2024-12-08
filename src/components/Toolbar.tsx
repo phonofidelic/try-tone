@@ -1,7 +1,7 @@
-import { ModuleData, ModuleType, useWorkspace } from './Workspace'
+import { ModuleData, ModuleType, useModules } from '@/ModulesContext'
+import { HP_1, U_1 } from '@/constants'
 import { Button } from './Button'
 import { Backdrop } from './ContextMenu'
-import { HP_1, U_1 } from '@/constants'
 
 export function Toolbar({
   isToolbarMenuOpen,
@@ -54,7 +54,7 @@ export function ModuleListAdd({
   modules: ModuleData<ModuleType>[]
   onSelect?: (event: React.MouseEvent) => void
 }) {
-  const { addModule } = useWorkspace()
+  const { addModule } = useModules()
 
   return (
     <div className="flex flex-col gap-2">

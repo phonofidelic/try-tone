@@ -1,8 +1,8 @@
 import * as Tone from 'tone'
-import { DestinationSelect } from './DestinationSelect'
-import { ModuleData, useWorkspace } from './Workspace'
-import { useAudioNode } from '../AudioNodeContext'
 import { useStopTouchmovePropagation } from '@/hooks'
+import { ModuleData, useModules } from '@/ModulesContext'
+import { useAudioNode } from '@/AudioNodeContext'
+import { DestinationSelect } from './DestinationSelect'
 
 export function Envelope({
   moduleData,
@@ -10,7 +10,7 @@ export function Envelope({
   moduleData: ModuleData<'envelope'>
 }) {
   const { id } = moduleData
-  const { modules, editModule, removeModule } = useWorkspace()
+  const { modules, editModule, removeModule } = useModules()
   const { node, getNode } = useAudioNode<'envelope'>(moduleData)
 
   if (!node) {

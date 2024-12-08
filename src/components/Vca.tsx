@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import { DestinationSelect } from './DestinationSelect'
-import { ModuleData, useWorkspace } from './Workspace'
-import { useAudioNode } from '../AudioNodeContext'
 import { useStopTouchmovePropagation } from '@/hooks'
+import { ModuleData, useModules } from '@/ModulesContext'
+import { useAudioNode } from '@/AudioNodeContext'
+import { DestinationSelect } from './DestinationSelect'
 
 export function Vca({ moduleData }: { moduleData: ModuleData<'vca'> }) {
   const { id } = moduleData
-  const { modules, editModule, removeModule } = useWorkspace()
+  const { modules, editModule, removeModule } = useModules()
   const { node, getNode } = useAudioNode<'vca'>(moduleData)
   const [volumeLevel, setVolumeLevel] = useState(0)
 

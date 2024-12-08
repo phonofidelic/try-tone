@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import * as Tone from 'tone'
 import { frequencyRange } from '@/constants'
+import { ModuleData, useModules } from '@/ModulesContext'
 import { useAudioNode } from '@/AudioNodeContext'
-import { ModuleData, useWorkspace } from './Workspace'
 import { DestinationSelect } from './DestinationSelect'
 import { KnobInput } from './KnobInput'
 import { LedIndicator } from './LedIndicator'
@@ -16,7 +16,7 @@ export function Oscillator({
   const [displayState, setDisplayState] = useState<'started' | 'stopped'>(
     'stopped',
   )
-  const { modules, editModule, removeModule } = useWorkspace()
+  const { modules, editModule, removeModule } = useModules()
   const { node, getNode } = useAudioNode<'oscillator' | 'lfo'>(moduleData)
 
   if (!node) {

@@ -1,10 +1,11 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext } from 'react'
 import * as Tone from 'tone'
-import { Analytics } from '@vercel/analytics/react'
-import { Workspace, WorkspaceContextProvider } from './components/Workspace'
-import { AudioNodeContextProvider } from './AudioNodeContext'
 import { TransportClass } from 'tone/build/esm/core/clock/Transport'
+import { Analytics } from '@vercel/analytics/react'
+import { Workspace } from './components/Workspace'
+import { ModulesContextProvider } from './ModulesContext'
+import { AudioNodeContextProvider } from './AudioNodeContext'
 
 const TransportContext = createContext<TransportClass | null>(null)
 
@@ -32,12 +33,12 @@ export function useTransport() {
 function App() {
   return (
     <TransportContextProvider>
-      <WorkspaceContextProvider>
+      <ModulesContextProvider>
         <AudioNodeContextProvider>
           <Workspace />
           <Analytics />
         </AudioNodeContextProvider>
-      </WorkspaceContextProvider>
+      </ModulesContextProvider>
     </TransportContextProvider>
   )
 }

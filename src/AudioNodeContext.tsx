@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import * as Tone from 'tone'
-import { ModuleData, ModuleType, useWorkspace } from './components/Workspace'
 import { frequencyRange } from './constants'
+import { ModuleType, useModules, ModuleData } from './ModulesContext'
 
 export type ModuleNode<TModuleType = ModuleType> = {
   id: string
@@ -46,7 +46,7 @@ export function AudioNodeContextProvider({
 }: {
   children: React.ReactNode
 }) {
-  const { modules } = useWorkspace()
+  const { modules } = useModules()
   const [, forceUpdate] = useState<ModuleNode[]>([])
   const nodesRef = useRef<ModuleNode[]>([])
   const [isReady, setIsReady] = useState(false)

@@ -1,19 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import * as Tone from 'tone'
+import clsx from 'clsx'
 import {
   makeGrid,
   makeScale,
   numericalDegreesStringToScaleArray,
-} from '../utils'
-import clsx from 'clsx'
-import { ModuleType, SequencerData, useWorkspace } from './Workspace'
-import { DestinationSelect } from './DestinationSelect'
-import { Button } from './Button'
-import { ALPHA_NAMES, OCTAVES, SCALES } from '../constants'
-import { ModuleNode, useAudioNodes } from '../AudioNodeContext'
+} from '@/utils'
+import { ALPHA_NAMES, OCTAVES, SCALES } from '@/constants'
+import { useModules, SequencerData, ModuleType } from '@/ModulesContext'
+import { ModuleNode, useAudioNodes } from '@/AudioNodeContext'
+import { useTransport } from '@/App'
 import { EditIcon, CloseIcon } from './Icons'
-import { useTransport } from '../App'
+import { Button } from './Button'
 import { Backdrop } from './ContextMenu'
+import { DestinationSelect } from './DestinationSelect'
 
 const DEFAULT_BPM = 60
 
@@ -25,7 +25,7 @@ interface Note {
 }
 
 export function SequencerPanel() {
-  const { sequencers, addSequencer } = useWorkspace()
+  const { sequencers, addSequencer } = useModules()
   const [isExpanded, setIsExpanded] = useState(false)
   const [selectedSequencer, setSelectedSequencer] =
     useState<SequencerData | null>(sequencers[0] ?? null)
@@ -134,7 +134,7 @@ export function Sequencer({
   const sequencerRef = useRef<SequencerData>(sequencerData)
   const { id, baseNote, octave, scale, pitchNodeId, gateNodeId } =
     sequencerRef.current
-  const { modules, editSequencer } = useWorkspace()
+  const { modules, editSequencer } = useModules()
   const { getNode } = useAudioNodes()
   const transport = useTransport()
 
@@ -457,7 +457,7 @@ function SequencerTabButton({
   setSelectedSequencer(sequencer: SequencerData): void
   setIsExpanded: React.Dispatch<React.SetStateAction<boolean>>
 }) {
-  const { editSequencer, removeSequencer, sequencers } = useWorkspace()
+  const { editSequencer, removeSequencer, sequencers } = useModules()
   const [isEditing, setIsEditing] = useState(false)
   return (
     <div className="relative group">

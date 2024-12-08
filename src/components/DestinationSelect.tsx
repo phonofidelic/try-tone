@@ -1,4 +1,4 @@
-import { ModuleData, ModuleType } from './Workspace'
+import { ModuleData, ModuleType } from '@/ModulesContext'
 
 export function DestinationSelect({
   destinations,

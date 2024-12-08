@@ -1,11 +1,11 @@
-import * as Tone from 'tone'
-import { DestinationSelect } from './DestinationSelect'
-import { ModuleData, useWorkspace } from './Workspace'
 import { useState } from 'react'
-import { useAudioNode } from '../AudioNodeContext'
-import { KnobInput } from './KnobInput'
+import * as Tone from 'tone'
+import { ModuleData, useModules } from '@/ModulesContext'
+import { useAudioNode } from '@/AudioNodeContext'
 import { clamp } from '@/utils'
 import { frequencyRange } from '@/constants'
+import { DestinationSelect } from './DestinationSelect'
+import { KnobInput } from './KnobInput'
 
 export default function Filter({
   moduleData,
@@ -14,7 +14,7 @@ export default function Filter({
 }) {
   const { id } = moduleData
   const [frequencyType, setFrequencyType] = useState(moduleData.settings.type)
-  const { modules, editModule, removeModule } = useWorkspace()
+  const { modules, editModule, removeModule } = useModules()
   const { node, getNode } = useAudioNode<'filter'>(moduleData)
   const [filterRollOff, setFilterRollOff] = useState<Tone.FilterRollOff>(
     moduleData.settings.rolloff ?? -12,
