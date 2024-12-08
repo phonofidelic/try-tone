@@ -1,5 +1,5 @@
 import { ModuleData, ModuleType, useModules } from '@/ModulesContext'
-import { HP_1, U_1 } from '@/constants'
+import { frequencyRange, HP_1, U_1 } from '@/constants'
 import { Button } from './Button'
 import { Backdrop } from './ContextMenu'
 
@@ -67,7 +67,7 @@ export function ModuleListAdd({
             sources: [],
             destinations: [],
             settings: {
-              frequency: 440,
+              frequency: frequencyRange['oscillator'].min,
               type: 'sine',
             },
             size: {
@@ -89,7 +89,7 @@ export function ModuleListAdd({
             sources: [],
             destinations: [],
             settings: {
-              frequency: 5,
+              frequency: frequencyRange['lfo'].min,
               type: 'sine',
             },
             size: {
@@ -157,7 +157,7 @@ export function ModuleListAdd({
             destinations: [],
             settings: {
               type: 'lowpass',
-              frequency: 350,
+              frequency: frequencyRange['filter'].min,
               rolloff: -12,
             },
             size: {
