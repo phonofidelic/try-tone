@@ -414,3 +414,21 @@ export const U_1 = 162
  * 1 horizontal pitch unit
  */
 export const HP_1 = 19
+
+export const frequencyRange = {
+  oscillator: {
+    min: 20,
+    max: 16000,
+    step: 0.1,
+  },
+  lfo: {
+    min: 0.01,
+    max: 20,
+    step: 0.0001,
+  },
+  filter: {
+    min: 0.1,
+    max: 20000,
+    step: 0.1,
+  },
+}

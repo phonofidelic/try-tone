@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import * as Tone from 'tone'
 import { ModuleData, ModuleType, useWorkspace } from './components/Workspace'
+import { frequencyRange } from './constants'
 
 export type ModuleNode<TModuleType = ModuleType> = {
   id: string
@@ -37,7 +38,6 @@ type OscillatorOptions = ConstructorParameters<typeof Tone.Oscillator>[0]
 type EnvelopeOptions = ConstructorParameters<typeof Tone.AmplitudeEnvelope>[0]
 type VcaOptions = ConstructorParameters<typeof Tone.Volume>[0]
 type FilterOptions = ConstructorParameters<typeof Tone.Filter>[0]
-type LfoOptions = ConstructorParameters<typeof Tone.LFO>[0]
 
 const AudioNodeContext = createContext<AudioNodeContextValue | null>(null)
 
@@ -105,7 +105,11 @@ export function AudioNodeContextProvider({
             nodesRef.current.find((node) => node.id === module.id) ?? {
               id: module.id,
               type: module.type,
-              data: new Tone.LFO(module.settings as LfoOptions),
+              data: new Tone.LFO(
+                module.settings.frequency,
+                frequencyRange[module.type].min,
+                frequencyRange[module.type].max,
+              ),
             }
           )
       }

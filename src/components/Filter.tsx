@@ -1,9 +1,11 @@
 import * as Tone from 'tone'
 import { DestinationSelect } from './DestinationSelect'
 import { ModuleData, useWorkspace } from './Workspace'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useAudioNode } from '../AudioNodeContext'
-import { useStopTouchmovePropagation } from '@/hooks'
+import { KnobInput } from './KnobInput'
+import { clamp } from '@/utils'
+import { frequencyRange } from '@/constants'
 
 export default function Filter({
   moduleData,
@@ -11,34 +13,27 @@ export default function Filter({
   moduleData: ModuleData<'filter'>
 }) {
   const { id } = moduleData
-  const [frequency, setFrequency] = useState(moduleData.settings.frequency)
   const [frequencyType, setFrequencyType] = useState(moduleData.settings.type)
-  const [frequencyResponseCurve, setFrequencyResponseCurve] =
-    useState<Float32Array | null>(null)
   const { modules, editModule, removeModule } = useWorkspace()
   const { node, getNode } = useAudioNode<'filter'>(moduleData)
   const [filterRollOff, setFilterRollOff] = useState<Tone.FilterRollOff>(
     moduleData.settings.rolloff ?? -12,
   )
 
-  useEffect(() => {
-    if (!node) {
-      return
-    }
-
-    setFrequencyResponseCurve(node.getFrequencyResponse())
-  }, [node])
-
   if (!node) {
     return null
   }
 
   const onFrequencyChange = (value: number) => {
-    setFrequency(value)
+    const clampedValue = clamp(
+      value,
+      frequencyRange[moduleData.type].min,
+      frequencyRange[moduleData.type].max,
+    )
     editModule<'filter'>(id, {
-      settings: { ...moduleData.settings, frequency: value },
+      settings: { ...moduleData.settings, frequency: clampedValue },
     })
-    node.frequency.rampTo(value, 0)
+    node.frequency.rampTo(Tone.Frequency(value).toFrequency(), 0)
   }
 
   const onTypeChange = (value: Tone.Filter['_type']) => {
@@ -47,7 +42,6 @@ export default function Filter({
       settings: { ...moduleData.settings, type: value },
     })
     node.type = value
-    setFrequencyResponseCurve(node.getFrequencyResponse())
   }
 
   const onFilterRollOffChange = (value: Tone.FilterRollOff) => {
@@ -56,7 +50,6 @@ export default function Filter({
     })
     node.rolloff = value
     setFilterRollOff(value)
-    setFrequencyResponseCurve(node.getFrequencyResponse())
   }
 
   const onConnect = (destinationId: string) => {
@@ -80,18 +73,18 @@ export default function Filter({
   }
 
   return (
-    <div className="flex flex-col gap-y-2 rounded p-2">
-      <FrequencyDisplay value={frequency} />
-      <FrequencyControl onChange={onFrequencyChange} />
-      <div className="flex w-full items-baseline">
-        {frequencyResponseCurve &&
-          Array.from(frequencyResponseCurve).map((response) => (
-            <div
-              key={response}
-              className="w-full bg-zinc-300"
-              style={{ height: response * 25 }}
-            />
-          ))}
+    <div className="flex gap-y-2 flex-col justify-between h-[calc(100%-52px)] p-2">
+      <div className="flex w-full justify-center">
+        <KnobInput
+          moduleId={moduleData.id}
+          initialValue={moduleData.settings.frequency}
+          label="Cutoff"
+          min={frequencyRange[moduleData.type].min}
+          max={frequencyRange[moduleData.type].max}
+          step={frequencyRange[moduleData.type].step}
+          units={['Hz', 'kHz']}
+          onChange={onFrequencyChange}
+        />
       </div>
       <FilterRolloffSelect
         value={filterRollOff}
@@ -109,27 +102,6 @@ export default function Filter({
         onChange={onConnect}
       />
     </div>
-  )
-}
-
-function FrequencyDisplay({ value }: { value: number }) {
-  return <div>Frequency: {Math.round(value)} kHz</div>
-}
-
-function FrequencyControl({ onChange }: { onChange: (value: number) => void }) {
-  const inputRef = useStopTouchmovePropagation()
-
-  return (
-    <input
-      ref={inputRef}
-      aria-label="frequency"
-      type="range"
-      min={0.1}
-      max={20000}
-      onChange={(event) => {
-        onChange(Tone.Frequency(event.target.value).toFrequency())
-      }}
-    />
   )
 }
 
