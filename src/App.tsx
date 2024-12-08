@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext } from 'react'
 import * as Tone from 'tone'
+import { Analytics } from '@vercel/analytics/react'
 import { Workspace, WorkspaceContextProvider } from './components/Workspace'
 import { AudioNodeContextProvider } from './AudioNodeContext'
 import { TransportClass } from 'tone/build/esm/core/clock/Transport'
@@ -34,6 +35,7 @@ function App() {
       <WorkspaceContextProvider>
         <AudioNodeContextProvider>
           <Workspace />
+          <Analytics />
         </AudioNodeContextProvider>
       </WorkspaceContextProvider>
     </TransportContextProvider>

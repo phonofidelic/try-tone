@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@vercel/analytics": "^1.4.1",
     "@vercel/toolbar": "^0.1.15",
     "clsx": "^2.1.1",
     "dexie": "^4.0.7",
