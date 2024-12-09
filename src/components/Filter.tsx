@@ -76,7 +76,7 @@ export default function Filter({
     <div className="flex gap-y-2 flex-col justify-between h-[calc(100%-52px)] p-2">
       <div className="flex w-full justify-center">
         <KnobInput
-          moduleId={moduleData.id}
+          id={moduleData.id}
           initialValue={moduleData.settings.frequency}
           label="Cutoff"
           min={frequencyRange[moduleData.type].min}

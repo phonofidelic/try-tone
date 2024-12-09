@@ -83,7 +83,7 @@ export function Oscillator({
       )}
       <div className="flex w-full justify-center">
         <KnobInput
-          moduleId={moduleData.id}
+          id={moduleData.id}
           initialValue={moduleData.settings.frequency}
           label="Frequency"
           min={frequencyRange[moduleData.type].min}
