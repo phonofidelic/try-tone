@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
-import { clamp } from '@/utils'
+import clsx from 'clsx'
+import { clamp, translateCoordinates } from '@/utils'
+import { useWorkspace } from './Workspace'
 
 export function KnobInput({
-  moduleId,
+  id,
   initialValue,
   min,
   max,
@@ -11,7 +13,7 @@ export function KnobInput({
   units,
   onChange,
 }: {
-  moduleId: string
+  id: string
   initialValue?: number
   min: number
   max: number
@@ -26,6 +28,8 @@ export function KnobInput({
   const SENSITIVITY = { mouse: 0.3, touch: 0.03 }
   const precision = getPrecision(step)
 
+  const { screenOffset, scale } = useWorkspace()
+
   const [value, setValue] = useState(initialValue ?? min)
   const [rotationDegrees, setRotationDegrees] = useState(0)
   const [clickOrigin, setClickOrigin] = useState<{
@@ -33,11 +37,11 @@ export function KnobInput({
     y: number
   } | null>(null)
 
-  // TODO: get scale and offset from WorkspaceContext
-  // const [cursorPosition, setCursorPosition] = useState<{
-  //   x: number
-  //   y: number
-  // } | null>(null)
+  const [cursorPosition, setCursorPosition] = useState<{
+    x: number
+    y: number
+  } | null>(null)
+  const [isValueDisplayVisible, setIsValueDisplayVisible] = useState(false)
 
   const knobRef = useRef<HTMLButtonElement>(null)
   const rotationDelta = useRef(0)
@@ -45,6 +49,7 @@ export function KnobInput({
   const isKnobChange = useRef(false)
   const keydownStart = useRef<number | null>(null)
   const initialized = useRef(false)
+  const cursorTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (initialValue && !initialized.current) {
@@ -98,13 +103,16 @@ export function KnobInput({
         rotate(newRotationDelta * -1)
         rotationDelta.current = newRotationDelta
         movementDeltaY.current = 0
-        // TODO: get scale and offset from WorkspaceContext
-        // setCursorPosition(
-        //   translateCoordinates(
-        //     { x: event.clientX, y: event.clientY },
-        //     { x: screenOffset.x - 16, y: screenOffset.y - 16 },
-        //   ),
-        // )
+
+        setCursorPosition(
+          translateCoordinates(
+            {
+              x: (event.clientX - clickOrigin.x) * scale,
+              y: (event.clientY - clickOrigin.y) * scale,
+            },
+            { x: -28, y: 16 },
+          ),
+        )
       }
     }
 
@@ -112,7 +120,6 @@ export function KnobInput({
       event.stopPropagation()
 
       if (clickOrigin) {
-        // TODO: improve touch interactions
         const { y } = clickOrigin
         const deltaY = event.touches[0].clientY - y
         const newRotationDelta = clamp(
@@ -127,8 +134,13 @@ export function KnobInput({
 
     const onMouseUp = () => {
       setClickOrigin(null)
-      // TODO: get scale and offset from WorkspaceContext
-      // setCursorPosition(null)
+      setIsValueDisplayVisible(false)
+      if (!cursorTimeoutRef.current) {
+        cursorTimeoutRef.current = setTimeout(() => {
+          cursorTimeoutRef.current = null
+          setCursorPosition(null)
+        }, 600)
+      }
     }
 
     const onTouchEnd = () => {
@@ -154,20 +166,26 @@ export function KnobInput({
     min,
     onChange,
     precision,
+    scale,
+    screenOffset.x,
+    screenOffset.y,
     step,
   ])
 
   return (
     <label className="flex flex-col relative gap-2 pt-10 w-full items-center">
-      {/* TODO: get scale and offset from WorkspaceContext */}
-      {/* {cursorPosition && (
+      {cursorPosition && (
         <div
-          key={`value-indicator_${moduleId}`}
-          className="fixed z-50"
+          key={`value-display_${id}`}
+          className={clsx(
+            'fixed z-50 transition-opacity duration-300 delay-300 ease-out',
+            {
+              'opacity-0': !isValueDisplayVisible,
+              'opacity-100': isValueDisplayVisible,
+            },
+          )}
           style={{
-            top: `${cursorPosition.y}px`,
-            left: `${cursorPosition.x}px`,
-            transform: `none`,
+            transform: `translate(${cursorPosition.x}px, ${cursorPosition.y}px) scale(${scale})`,
           }}
         >
           <div className="flex justify-center w-full gap-x-1 dark:text-white">
@@ -180,7 +198,7 @@ export function KnobInput({
             </div>
           </div>
         </div>
-      )} */}
+      )}
       <div className="w-full flex justify-center z-10">
         <div className="drop-shadow-[2px_2px_5px_rgba(0,0,0,0.5)]">
           <button
@@ -192,6 +210,7 @@ export function KnobInput({
             onMouseDown={(event) => {
               isKnobChange.current = true
               setClickOrigin({ x: event.clientX, y: event.clientY })
+              setIsValueDisplayVisible(true)
             }}
             onTouchStart={(event) => {
               setClickOrigin({
@@ -204,13 +223,21 @@ export function KnobInput({
               if (
                 !['ArrowUp', 'ArrowDown', 'ArrowRight', 'ArrowLeft'].includes(
                   event.key,
-                )
+                ) ||
+                !knobRef.current
               ) {
                 return
               }
               if (keydownStart.current === null) {
                 keydownStart.current = event.timeStamp
+                setIsValueDisplayVisible(true)
               }
+
+              setCursorPosition({
+                x: 0,
+                y: 24,
+              })
+
               const delta = event.timeStamp - keydownStart.current
               const newValue = ['ArrowUp', 'ArrowRight'].includes(event.key)
                 ? clamp(value + clamp(delta * step, 0, max), min, max)
@@ -230,7 +257,15 @@ export function KnobInput({
               onChange(Number(newValue))
             }}
             onKeyUp={() => {
+              console.log('keyup')
+              setIsValueDisplayVisible(false)
               keydownStart.current = null
+              if (!cursorTimeoutRef.current) {
+                cursorTimeoutRef.current = setTimeout(() => {
+                  cursorTimeoutRef.current = null
+                  setCursorPosition(null)
+                }, 1000)
+              }
             }}
           />
         </div>
@@ -271,7 +306,7 @@ export function KnobInput({
         </div>
       </div>
       <div className="absolute flex w-full mx-auto -z-10">
-        <datalist id={`values_${moduleId}`}>
+        <datalist id={`values_${id}`}>
           <option
             value={min}
             label={getValueInUnitsString(min, units, precision)} //
@@ -309,7 +344,7 @@ export function KnobInput({
           setValue(Number(event.target.value))
           onChange(Number(event.target.value))
         }}
-        list={`values_${moduleId}`}
+        list={`values_${id}`}
       />
     </label>
   )

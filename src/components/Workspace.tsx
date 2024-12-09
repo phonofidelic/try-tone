@@ -50,7 +50,7 @@ export function WorkspaceContextProvider({
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
-export function useWorkspaceContext() {
+export function useWorkspace() {
   const context = useContext(WorkspaceContext)
   if (context === null) {
     throw new Error(
@@ -62,8 +62,7 @@ export function useWorkspaceContext() {
 
 export function Workspace() {
   const { modules, removeAllModules } = useModules()
-  const { scale, screenOffset, setScale, setScreenOffset } =
-    useWorkspaceContext()
+  const { scale, screenOffset, setScale, setScreenOffset } = useWorkspace()
 
   const defaultOriginCoordinates = {
     x: window.innerWidth / 2,
