@@ -1,14 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
-import { Dexie, type EntityTable } from 'dexie'
 import { HP_1, U_1 } from '@/constants'
 import { clamp, translateCoordinates } from '@/utils'
-import {
-  ModuleData,
-  ModuleType,
-  SequencerData,
-  useModules,
-} from '@/ModulesContext'
+import { useModules } from '@/ModulesContext'
 import { ModuleListAdd, Toolbar } from './Toolbar'
 import Tile from './Tile'
 import { Oscillator } from './Oscillator'
@@ -18,16 +12,6 @@ import { ContextMenu } from './ContextMenu'
 import Filter from './Filter'
 import { Button } from './Button'
 import { SequencerPanel } from './Sequencer'
-
-// eslint-disable-next-line react-refresh/only-export-components
-export const db = new Dexie('ModuleDatabase') as Dexie & {
-  modules: EntityTable<ModuleData<ModuleType>, 'id'>
-  sequencers: EntityTable<SequencerData, 'id'>
-}
-db.version(1).stores({
-  modules: '++id',
-  sequencers: '++id, created',
-})
 
 const RACK_U = 6
 const RACK_HP = 104
