@@ -139,7 +139,7 @@ export function KnobInput({
         cursorTimeoutRef.current = setTimeout(() => {
           cursorTimeoutRef.current = null
           setCursorPosition(null)
-        }, 300)
+        }, 600)
       }
     }
 
