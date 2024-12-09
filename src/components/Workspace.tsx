@@ -1,4 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import {
+  createContext,
+  Dispatch,
+  SetStateAction,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import clsx from 'clsx'
 import { HP_1, U_1 } from '@/constants'
 import { clamp, translateCoordinates } from '@/utils'
@@ -16,8 +24,46 @@ import { SequencerPanel } from './Sequencer'
 const RACK_U = 6
 const RACK_HP = 104
 
+type WorkspaceContextValue = {
+  scale: number
+  screenOffset: { x: number; y: number }
+  setScale: Dispatch<SetStateAction<number>>
+  setScreenOffset: Dispatch<SetStateAction<{ x: number; y: number }>>
+}
+
+const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)
+
+export function WorkspaceContextProvider({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const [scale, setScale] = useState(1)
+  const [screenOffset, setScreenOffset] = useState({ x: 0, y: 0 })
+  return (
+    <WorkspaceContext.Provider
+      value={{ scale, screenOffset, setScale, setScreenOffset }}
+    >
+      {children}
+    </WorkspaceContext.Provider>
+  )
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function useWorkspaceContext() {
+  const context = useContext(WorkspaceContext)
+  if (context === null) {
+    throw new Error(
+      'useWorkspaceContext must be used within a WorkspaceContextProvider',
+    )
+  }
+  return context
+}
+
 export function Workspace() {
   const { modules, removeAllModules } = useModules()
+  const { scale, screenOffset, setScale, setScreenOffset } =
+    useWorkspaceContext()
 
   const defaultOriginCoordinates = {
     x: window.innerWidth / 2,
@@ -28,11 +74,9 @@ export function Workspace() {
   const [contextMenuClickOrigin, setContextMenuClickOrigin] = useState(
     defaultOriginCoordinates,
   )
-  const [scale, setScale] = useState(1)
   const workspaceDivRef = useRef<HTMLDivElement | null>(null)
   const [spaceIsPressed, setSpaceIsPressed] = useState(false)
   const [isGrabbing, setIsGrabbing] = useState(false)
-  const [screenOffset, setScreenOffset] = useState({ x: 0, y: 0 })
   const [panOrigin, setPanOrigin] = useState<{ x: number; y: number } | null>(
     null,
   )
@@ -153,7 +197,15 @@ export function Workspace() {
       workspaceDiv.removeEventListener('pointerout', onPointerUp)
       workspaceDiv.removeEventListener('pointerleave', onPointerUp)
     }
-  }, [isGrabbing, panOrigin, scale, screenOffset.x, screenOffset.y])
+  }, [
+    isGrabbing,
+    panOrigin,
+    scale,
+    screenOffset.x,
+    screenOffset.y,
+    setScale,
+    setScreenOffset,
+  ])
 
   return (
     <>
