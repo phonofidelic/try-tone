@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react'
 import * as Tone from 'tone'
+import { Dexie, type EntityTable } from 'dexie'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from './components/Workspace'
 import { makeGrid } from './utils'
 
 export type ModuleType = 'oscillator' | 'vca' | 'envelope' | 'filter' | 'lfo'
@@ -84,6 +84,15 @@ type ModulesContextValue = {
 }
 
 const ModulesContext = createContext<ModulesContextValue | null>(null)
+
+const db = new Dexie('ModuleDatabase') as Dexie & {
+  modules: EntityTable<ModuleData<ModuleType>, 'id'>
+  sequencers: EntityTable<SequencerData, 'id'>
+}
+db.version(1).stores({
+  modules: '++id',
+  sequencers: '++id, created',
+})
 
 export function ModulesContextProvider({
   children,
