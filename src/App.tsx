@@ -3,7 +3,7 @@ import { createContext, useContext } from 'react'
 import * as Tone from 'tone'
 import { TransportClass } from 'tone/build/esm/core/clock/Transport'
 import { Analytics } from '@vercel/analytics/react'
-import { Workspace } from './components/Workspace'
+import { Workspace, WorkspaceContextProvider } from './components/Workspace'
 import { ModulesContextProvider } from './ModulesContext'
 import { AudioNodeContextProvider } from './AudioNodeContext'
 
@@ -35,7 +35,9 @@ function App() {
     <TransportContextProvider>
       <ModulesContextProvider>
         <AudioNodeContextProvider>
-          <Workspace />
+          <WorkspaceContextProvider>
+            <Workspace />
+          </WorkspaceContextProvider>
           <Analytics />
         </AudioNodeContextProvider>
       </ModulesContextProvider>
