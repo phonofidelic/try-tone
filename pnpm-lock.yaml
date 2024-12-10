@@ -16,10 +16,10 @@ dependencies:
     version: 2.1.1
   dexie:
     specifier: ^4.0.7
-    version: 4.0.7
+    version: 4.0.10
   dexie-react-hooks:
     specifier: ^1.1.7
-    version: 1.1.7(@types/react@18.3.14)(dexie@4.0.7)(react@18.3.1)
+    version: 1.1.7(@types/react@18.3.14)(dexie@4.0.10)(react@18.3.1)
   react:
     specifier: ^18.2.0
     version: 18.3.1
@@ -1325,7 +1325,7 @@ packages:
     resolution: {integrity: sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==}
     dev: true
 
-  /dexie-react-hooks@1.1.7(@types/react@18.3.14)(dexie@4.0.7)(react@18.3.1):
+  /dexie-react-hooks@1.1.7(@types/react@18.3.14)(dexie@4.0.10)(react@18.3.1):
     resolution: {integrity: sha512-Lwv5W0Hk+uOW3kGnsU9GZoR1er1B7WQ5DSdonoNG+focTNeJbHW6vi6nBoX534VKI3/uwHebYzSw1fwY6a7mTw==}
     peerDependencies:
       '@types/react': '>=16'
@@ -1333,12 +1333,12 @@ packages:
       react: '>=16'
     dependencies:
       '@types/react': 18.3.14
-      dexie: 4.0.7
+      dexie: 4.0.10
       react: 18.3.1
     dev: false
 
-  /dexie@4.0.7:
-    resolution: {integrity: sha512-M+Lo6rk4pekIfrc2T0o2tvVJwL6EAAM/B78DNfb8aaxFVoI1f8/rz5KTxuAnApkwqTSuxx7T5t0RKH7qprapGg==}
+  /dexie@4.0.10:
+    resolution: {integrity: sha512-eM2RzuR3i+M046r2Q0Optl3pS31qTWf8aFuA7H9wnsHTwl8EPvroVLwvQene/6paAs39Tbk6fWZcn2aZaHkc/w==}
     dev: false
 
   /didyoumean@1.2.2:
