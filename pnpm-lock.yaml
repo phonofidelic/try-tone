@@ -63,7 +63,7 @@ devDependencies:
     version: 4.6.2(eslint@9.16.0)
   eslint-plugin-react-refresh:
     specifier: ^0.4.6
-    version: 0.4.16(eslint@9.16.0)
+    version: 0.4.26(eslint@9.16.0)
   postcss:
     specifier: ^8.4.38
     version: 8.4.49
@@ -1476,8 +1476,8 @@ packages:
       eslint: 9.16.0
     dev: true
 
-  /eslint-plugin-react-refresh@0.4.16(eslint@9.16.0):
-    resolution: {integrity: sha512-slterMlxAhov/DZO8NScf6mEeMBBXodFUolijDvrtTxyezyLoTQaa73FyYus/VbTdftd8wBgBxPMRk3poleXNQ==}
+  /eslint-plugin-react-refresh@0.4.26(eslint@9.16.0):
+    resolution: {integrity: sha512-1RETEylht2O6FM/MvgnyvT+8K21wLqDNg4qD51Zj3guhjt433XbnnkVttHMyaVyAFD03QSV4LPS5iE3VQmO7XQ==}
     peerDependencies:
       eslint: '>=8.40'
     dependencies:
