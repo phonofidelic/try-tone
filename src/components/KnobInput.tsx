@@ -362,7 +362,6 @@ const getPrecision = (a: number) => {
 }
 
 const roundToPrecision = (num: number, precision: number) => {
-  10 ** precision * num
   return Math.round(10 ** precision * num) / 10 ** precision
 }
 
