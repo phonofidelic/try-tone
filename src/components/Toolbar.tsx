@@ -75,7 +75,7 @@ export function ModuleListAdd({
               hp: HP_1 * 12,
             },
           })
-          typeof onSelect === 'function' && onSelect(event)
+          if (typeof onSelect === 'function') onSelect(event)
         }}
       >
         Add Oscillator
@@ -97,7 +97,7 @@ export function ModuleListAdd({
               hp: HP_1 * 12,
             },
           })
-          typeof onSelect === 'function' && onSelect(event)
+          if (typeof onSelect === 'function') onSelect(event)
         }}
       >
         Add LFO
@@ -118,7 +118,7 @@ export function ModuleListAdd({
               hp: HP_1 * 12,
             },
           })
-          typeof onSelect === 'function' && onSelect(event)
+          if (typeof onSelect === 'function') onSelect(event)
         }}
       >
         Add VCA
@@ -142,7 +142,7 @@ export function ModuleListAdd({
               hp: HP_1 * 12,
             },
           })
-          typeof onSelect === 'function' && onSelect(event)
+          if (typeof onSelect === 'function') onSelect(event)
         }}
       >
         Add Envelope
@@ -165,7 +165,7 @@ export function ModuleListAdd({
               hp: HP_1 * 12,
             },
           })
-          typeof onSelect === 'function' && onSelect(event)
+          if (typeof onSelect === 'function') onSelect(event)
         }}
       >
         Add Filter
