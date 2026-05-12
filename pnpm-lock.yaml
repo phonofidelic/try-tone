@@ -7,7 +7,7 @@ settings:
 dependencies:
   '@vercel/analytics':
     specifier: ^1.4.1
-    version: 1.4.1(react@18.3.1)
+    version: 1.6.1(react@18.3.1)
   '@vercel/toolbar':
     specifier: ^0.1.15
     version: 0.1.28(react@18.3.1)(vite@5.4.11)
@@ -1048,8 +1048,8 @@ packages:
       eslint-visitor-keys: 3.4.3
     dev: true
 
-  /@vercel/analytics@1.4.1(react@18.3.1):
-    resolution: {integrity: sha512-ekpL4ReX2TH3LnrRZTUKjHHNpNy9S1I7QmS+g/RQXoSUQ8ienzosuX7T9djZ/s8zPhBx1mpHP/Rw5875N+zQIQ==}
+  /@vercel/analytics@1.6.1(react@18.3.1):
+    resolution: {integrity: sha512-oH9He/bEM+6oKlv3chWuOOcp8Y6fo6/PSro8hEkgCW3pu9/OiCXiUpRUogDh3Fs3LH2sosDrx8CxeOLBEE+afg==}
     peerDependencies:
       '@remix-run/react': ^2
       '@sveltejs/kit': ^1 || ^2
