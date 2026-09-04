@@ -1,4 +1,4 @@
-# Try Tone
+# Browser Synth
 
 Interactive browser-based modular synthesizer built to explore audio synthesis
 and the Web Audio ecosystem through [Tone.js](https://tonejs.github.io/).
