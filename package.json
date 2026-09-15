@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@vercel/analytics": "^1.4.1",
-    "@vercel/toolbar": "^0.1.15",
+    "@vercel/toolbar": "^0.2.0",
     "clsx": "^2.1.1",
     "dexie": "^4.0.7",
     "dexie-react-hooks": "^1.1.7",
@@ -30,9 +30,9 @@
     "autoprefixer": "^10.4.19",
     "eslint": "^9.0.0",
     "eslint-plugin-react-hooks": "^7.0.0",
-    "eslint-plugin-react-refresh": "^0.4.6",
+    "eslint-plugin-react-refresh": "^0.5.0",
     "postcss": "^8.4.38",
-    "prettier": "3.4.2",
+    "prettier": "3.9.6",
     "tailwindcss": "^3.4.3",
     "typescript": "^5.2.2",
     "vite": "^5.2.0"
